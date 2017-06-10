@@ -1,2 +1,3 @@
-# bugz
-Multiplayer game for kids.
+# Colony
+
+A multiplayer ant colony game for kids.
