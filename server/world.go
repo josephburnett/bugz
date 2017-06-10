@@ -1,22 +1,12 @@
-package "colony"
+package colony
 
-type Owner Owner
-type Point int[2]
-type Direction int[2]
+import "math/rand"
+
+type Owner string
+type Point [2]int
+type Direction [2]int
 type Phermones map[Point]bool
 type Surroundings map[Point]*Object
-
-const (
-    NONE = Direction{0,0}
-	UP = Direction{0,1}
-	UP_RIGHT = Direction{1,1}
-	RIGHT = Direction{0,1}
-	DOWN_RIGHT = Direction{1,-1}
-	DOWN = Direction{0,-1}
-	DOWN_LEFT = Direction{-1,-1}
-	LEFT = Direction{-1,0}
-	UP_LEFT = Direction{-1,1}
-)
 
 func (p Point) Plus(d Direction) Point {
 	return Point{p[0] + d[0], p[1] + d[1]}
@@ -32,26 +22,39 @@ func (p1 Point) Equals(p2 Point) bool {
 type Object interface {
 	Owner() Owner
 	Point() Point
-	Move(*Surroundings, *Phermones) Point
-	Resolve(*Object) bool
+	Move(Surroundings, Phermones) Point
+	Fight(*Object) bool
+	Dead() bool
 }
 
 type World struct {
-	Objects []*Object
-	Map map[Point]*Object
-	Phermones map[Owner]*Phermones
+	Map       Surroundings
+	Phermones map[Owner]Phermones
 }
 
-func (w *World) Tick(t int) {
-	for o := w.Objects {
-		owner := o.Owner()
-		intent := o.Move(w.Map, Phermones[owner])
-		if !intend.Equals(o.Point) {
-			target, occupied := w.Map[]
-			if !occupied {
-				
+func (w *World) Tick() {
+	objects := make([]*Object, len(w.Map))
+	for _, o := range w.Map {
+		objects = append(objects, o)
+	}
+	perm := rand.Perm(len(objects))
+	for _, i := range perm {
+		o := *objects[i]
+		if o.Dead() {
+			continue
+		}
+		fromPoint := o.Point()
+		toPoint := o.Move(w.Map, w.Phermones[o.Owner()])
+		if fromPoint.Equals(toPoint) {
+			continue
+		}
+		target, occupied := w.Map[toPoint]
+		if occupied {
+			win := o.Fight(target)
+			if win {
+				w.Map[toPoint] = &o
 			}
-			dead := o.Resolve()
+			delete(w.Map, fromPoint)
 		}
 	}
 }

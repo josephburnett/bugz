@@ -1,24 +1,30 @@
-package "colony"
+package colony
+
+var _ Object = &Colony{}
 
 type Colony struct {
-	Owner string
-	Point Point
-	Direction Direction
-	Speed int
+	owner     Owner
+	point     Point
+	direction Direction
+	speed     int
 }
 
-func (c *Colony) Owner() string {
-	return c.Owner
+func (c *Colony) Owner() Owner {
+	return c.owner
 }
 
 func (c *Colony) Point() Point {
-	return c.Point
+	return c.point
 }
 
-func (c *Colony) Move(_ *Surroudings, _ *Phermones) Point {
-	return c.Point
+func (c *Colony) Move(_ Surroundings, _ Phermones) Point {
+	return c.point
 }
 
-func (c *Colony) Resolve(o *Object) {
-	// implement rules of engagement
+func (c *Colony) Fight(o *Object) bool {
+	return true
+}
+
+func (c *Colony) Dead() bool {
+	return false
 }

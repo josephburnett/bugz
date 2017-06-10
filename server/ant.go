@@ -1,28 +1,32 @@
-package "colony"
+package colony
 
-var _ Object = Ant{}
+var _ Object = &Ant{}
 
 type Ant struct {
-	Owner Owner
-	Point Point
-	Direction Direction
-	Speed int
-	Strength int
-	Endurance int
+	owner     Owner
+	point     Point
+	direction Direction
+	speed     int
+	strength  int
+	endurance int
 }
 
 func (a *Ant) Owner() Owner {
-	return a.Owner
+	return a.owner
 }
 
 func (a *Ant) Point() Point {
-	return a.Point
+	return a.point
 }
 
-func (a *Ant) Move(s *Surroundings, p *Phermones) Point {
-	// implement movements
+func (a *Ant) Move(s Surroundings, p Phermones) Point {
+	return a.point
 }
 
-func (a *Ant) Resolve(o *Object) {
-	// implement rules of engagement
+func (a *Ant) Fight(o *Object) bool {
+	return true
+}
+
+func (a *Ant) Dead() bool {
+	return false
 }
