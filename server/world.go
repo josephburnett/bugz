@@ -39,9 +39,18 @@ type World struct {
 	colonies  map[Point]*Colony
 }
 
+func NewWorld() *World {
+	return &World{
+		owners: make(map[Owner]*Colony),
+		phermones: make(map[Owner]Phermones),
+		objects: make(Objects),
+		colonies: make(map[Point]*Colony),
+	}
+}
+
 func (w *World) Produce() {
 	for _, c := range w.colonies {
-		ant, produced := c.Produce(w.objects, w.phermones[c.Owner()])
+		ant, produced := c.Produce(w.objects)
 		if produced {
 			w.objects[ant.Point()] = ant
 		}
