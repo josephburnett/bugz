@@ -1,7 +1,5 @@
 package colony
 
-var _ Object = &Colony{}
-
 type Colony struct {
 	owner     Owner
 	point     Point
@@ -17,14 +15,6 @@ func (c *Colony) Point() Point {
 	return c.point
 }
 
-func (c *Colony) Move(_ Surroundings, _ Phermones) Point {
-	return c.point
-}
-
-func (c *Colony) Fight(o *Object) bool {
-	return true
-}
-
-func (c *Colony) Dead() bool {
-	return false
+func (c *Colony) Produce(o Objects, p Phermones) (*Ant, bool) {
+	return nil, false
 }

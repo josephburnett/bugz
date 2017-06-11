@@ -6,7 +6,7 @@ type Owner string
 type Point [2]int
 type Direction [2]int
 type Phermones map[Point]bool
-type Surroundings map[Point]*Object
+type Objects map[Point]Object
 
 func (p Point) Plus(d Direction) Point {
 	return Point{p[0] + d[0], p[1] + d[1]}
@@ -22,39 +22,62 @@ func (p1 Point) Equals(p2 Point) bool {
 type Object interface {
 	Owner() Owner
 	Point() Point
-	Move(Surroundings, Phermones) Point
-	Fight(*Object) bool
 	Dead() bool
 }
 
-type World struct {
-	Map       Surroundings
-	Phermones map[Owner]Phermones
+type AnimateObject interface {
+	Move(Objects, Phermones) Point
+	Attack(Object) bool
+	TakeDamage(int)
+	Strength() int
 }
 
-func (w *World) Tick() {
-	objects := make([]*Object, len(w.Map))
-	for _, o := range w.Map {
+type World struct {
+	owners    map[Owner]*Colony
+	phermones map[Owner]Phermones
+	objects   Objects
+	colonies  map[Point]*Colony
+}
+
+func (w *World) Produce() {
+	for _, c := range w.colonies {
+		ant, produced := c.Produce(w.objects, w.phermones[c.Owner()])
+		if produced {
+			w.objects[ant.Point()] = ant
+		}
+	}
+}
+
+func (w *World) Advance() {
+	objects := make([]Object, len(w.objects))
+	for _, o := range w.objects {
 		objects = append(objects, o)
 	}
 	perm := rand.Perm(len(objects))
 	for _, i := range perm {
-		o := *objects[i]
+		o := objects[i]
 		if o.Dead() {
 			continue
 		}
-		fromPoint := o.Point()
-		toPoint := o.Move(w.Map, w.Phermones[o.Owner()])
-		if fromPoint.Equals(toPoint) {
-			continue
-		}
-		target, occupied := w.Map[toPoint]
-		if occupied {
-			win := o.Fight(target)
-			if win {
-				w.Map[toPoint] = &o
+		if ao, ok := o.(AnimateObject); ok {
+			fromPoint := o.Point()
+			toPoint := ao.Move(w.objects, w.phermones[o.Owner()])
+			if fromPoint.Equals(toPoint) {
+				continue
 			}
-			delete(w.Map, fromPoint)
+			target, occupied := w.objects[toPoint]
+			if occupied {
+				win := ao.Attack(target)
+				if win {
+					w.objects[toPoint] = o
+				}
+				delete(w.objects, fromPoint)
+			}
+		}
+	}
+	for _, o := range w.objects {
+		if o.Dead() {
+			delete(w.objects, o.Point())
 		}
 	}
 }
