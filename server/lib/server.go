@@ -2,11 +2,11 @@ package colony
 
 import "time"
 
-func serve() {
+func Serve() {
 	w := NewWorld()
 	e := EventLoop(w)
 	defer close(e)
-	t := time.NewTicker(250 * time.Millisecond)
+	t := time.NewTicker(500 * time.Millisecond)
 	defer t.Stop()
 	for {
 		_, ok := <-t.C

@@ -1,5 +1,7 @@
 package colony
 
+import "log"
+
 type Event interface {
 	isEvent()
 }
@@ -14,14 +16,15 @@ func EventLoop(w *World) chan Event {
 			}
 			switch e := event.(type) {
 			default:
-				// log and error
-			case TickEvent:
+				log.Println("[ERROR] unknown event")
+			case *TickEvent:
+				log.Println("tick")
 				w.Produce()
 				w.Advance()
-			case UiProduceEvent:
+			case *UiProduceEvent:
 				c := w.owners[e.owner]
 				c.produce = true
-			case UiPhermoneEvent:
+			case *UiPhermoneEvent:
 				p := w.phermones[e.owner]
 				if e.state {
 					p[e.point] = e.state
@@ -35,16 +38,19 @@ func EventLoop(w *World) chan Event {
 }
 
 type TickEvent struct{}
-func (e TickEvent) isEvent() {}
 
-type UiProduceEvent struct{
+func (e *TickEvent) isEvent() {}
+
+type UiProduceEvent struct {
 	owner Owner
 }
-func (e UiProduceEvent) isEvent() {}
 
-type UiPhermoneEvent struct{
+func (e *UiProduceEvent) isEvent() {}
+
+type UiPhermoneEvent struct {
 	owner Owner
 	point Point
 	state bool
 }
-func (e UiPhermoneEvent) isEvent() {}
+
+func (e *UiPhermoneEvent) isEvent() {}

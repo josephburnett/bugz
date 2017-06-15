@@ -47,3 +47,9 @@ func (a *Ant) TakeDamage(d int) {
 func (a *Ant) Dead() bool {
 	return a.strength > 0
 }
+
+func (a *Ant) View() *ObjectView {
+	return &ObjectView{
+		direction: a.direction,
+	}
+}

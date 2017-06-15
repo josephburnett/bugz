@@ -3,6 +3,8 @@ package colony
 import (
 	"log"
 	"net/http"
+
+	"github.com/gorilla/websocket"
 )
 
 type ClientMessage struct {
@@ -11,7 +13,6 @@ type ClientMessage struct {
 }
 
 type ServerMessage struct {
-	
 }
 
 var upgrader = websocket.Upgrader{}

@@ -23,6 +23,7 @@ type Object interface {
 	Owner() Owner
 	Point() Point
 	Dead() bool
+	View() *ObjectView
 }
 
 type AnimateObject interface {
@@ -41,10 +42,10 @@ type World struct {
 
 func NewWorld() *World {
 	return &World{
-		owners: make(map[Owner]*Colony),
+		owners:    make(map[Owner]*Colony),
 		phermones: make(map[Owner]Phermones),
-		objects: make(Objects),
-		colonies: make(map[Point]*Colony),
+		objects:   make(Objects),
+		colonies:  make(map[Point]*Colony),
 	}
 }
 
