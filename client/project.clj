@@ -13,7 +13,8 @@
                  [cljsjs/react "15.4.2-1"]
                  [cljsjs/react-dom "15.4.2-1"]
                  [sablono "0.7.7"]
-                 [org.omcljs/om "1.0.0-alpha46"]]
+                 [org.omcljs/om "1.0.0-alpha46"]
+                 [jarohen/chord "0.8.1"]]
 
   :plugins [[lein-figwheel "0.5.10"]
             [lein-cljsbuild "1.1.5" :exclusions [[org.clojure/clojure]]]]
@@ -32,7 +33,8 @@
                            ;; in the default browser once Figwheel has
                            ;; started and complied your application.
                            ;; Comment this out once it no longer serves you.
-                           :open-urls ["http://localhost:3449/index.html"]}
+                           :open-urls ["http://localhost:3449/index.html"]
+                           :websocket-host :js-client-host}
 
                 :compiler {:main client.core
                            :asset-path "js/compiled/out"

@@ -1,6 +1,7 @@
 (ns client.core
   (:require [om.core :as om :include-macros true]
-            [om.dom :as dom :include-macros true]))
+            [om.dom :as dom :include-macros true]
+            [chord.client :refer [ws-ch]]))
 
 (enable-console-print!)
 
@@ -8,15 +9,35 @@
 
 ;; define your app data so that it doesn't get over-written on reload
 
-(defonce app-state (atom {:text "Hello world!"}))
+(defonce app-state (atom {:owner "joe"
+                          :world-view {}}))
+
+(defn cell-view [cell _]
+  (reify om/IRender
+    (render [_]
+      (dom/td nil
+             (if (nil? (:Object cell)) "0" "1")))))
+
+(defn row-view [row _]
+  (reify om/IRender
+    (render [_]
+      (apply dom/tr nil (om/build-all cell-view row)))))
+
+(defn world-view [world _]
+  (reify om/IRender
+    (render [_]
+      (if-not (contains? world :PointsView)
+        (dom/div nil (dom/h2 nil "Loading..."))
+        (let [points (:PointsView world)]
+          (dom/div nil (dom/table nil (apply dom/tbody nil (om/build-all row-view world)))))))))
 
 (om/root
   (fn [data owner]
     (reify om/IRender
       (render [_]
         (dom/div nil
-                 (dom/h1 nil (:text data))
-                 (dom/h3 nil "Edit this and watch it change (unless your provider doesn't support websockets)!")))))
+                 (dom/h1 nil (str "Owner: "(:owner data)))
+                 (om/build world-view (:world-view data))))))
   app-state
   {:target (. js/document (getElementById "app"))})
 
