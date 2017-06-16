@@ -1,19 +1,19 @@
 package colony
 
 type ObjectView struct {
-	direction Direction
-	color     string
+	Direction Direction
+	Color     string
 }
 
 type PointView struct {
-	point    Point
-	object   *ObjectView
-	phermone bool
-	colony   bool
+	Point    Point
+	Object   *ObjectView
+	Phermone bool
+	Colony   bool
 }
 
 type WorldView struct {
-	points [][]*PointView
+	Points [][]*PointView
 }
 
 func (w *World) View(owner Owner) *WorldView {
@@ -22,30 +22,31 @@ func (w *World) View(owner Owner) *WorldView {
 	lowerLeft := &Point{center[0] - 19, center[1] - 19}
 	upperRight := &Point{center[0] + 19, center[1] + 19}
 	wv := &WorldView{
-		points: make([][]*PointView, 39),
+		Points: make([][]*PointView, 0, 39),
 	}
-	for y := upperRight[1]; y <= lowerLeft[1]; y-- {
-		row := make([]*PointView, 39)
-		wv.points = append(wv.points, row)
+	for y := upperRight[1]; y >= lowerLeft[1]; y-- {
+		row := make([]*PointView, 0, 39)
+		wv.Points = append(wv.Points, row)
 		for x := lowerLeft[0]; x <= upperRight[0]; x++ {
 			point := Point{x, y}
 			pv := &PointView{
-				point: point,
+				Point: point,
 			}
 			object, exists := w.objects[point]
 			if exists {
-				pv.object = object.View()
+				pv.Object = object.View()
 			}
 			_, present := phermones[point]
 			if present {
-				pv.phermone = true
+				pv.Phermone = true
 			}
 			colony, exists := w.colonies[point]
 			if exists && colony.owner == owner {
-				pv.colony = true
+				pv.Colony = true
 			}
 			row = append(row, pv)
 		}
+		wv.Points = append(wv.Points, row)
 	}
 	return wv
 }

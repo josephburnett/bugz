@@ -1,6 +1,9 @@
 package colony
 
-import "math/rand"
+import (
+	"log"
+	"math/rand"
+)
 
 type Owner string
 type Point [2]int
@@ -49,6 +52,15 @@ func NewWorld() *World {
 	}
 }
 
+func (w *World) NewColony(o Owner) {
+	c := &Colony{
+		owner: o,
+		point: Point{0, 0},
+	}
+	w.owners[o] = c
+	w.colonies[c.Point()] = c
+}
+
 func (w *World) Produce() {
 	for _, c := range w.colonies {
 		ant, produced := c.Produce(w.objects)
@@ -59,7 +71,7 @@ func (w *World) Produce() {
 }
 
 func (w *World) Advance() {
-	objects := make([]Object, len(w.objects))
+	objects := make([]Object, 0, len(w.objects))
 	for _, o := range w.objects {
 		objects = append(objects, o)
 	}
@@ -72,15 +84,24 @@ func (w *World) Advance() {
 		if ao, ok := o.(AnimateObject); ok {
 			fromPoint := o.Point()
 			toPoint := ao.Move(w.objects, w.phermones[o.Owner()])
+			log.Println("moving object")
+			log.Println(fromPoint)
+			log.Println(toPoint)
 			if fromPoint.Equals(toPoint) {
+				log.Println("staying put")
 				continue
 			}
 			target, occupied := w.objects[toPoint]
 			if occupied {
+				log.Println("fighting")
 				win := ao.Attack(target)
 				if win {
 					w.objects[toPoint] = o
 				}
+				delete(w.objects, fromPoint)
+			} else {
+				log.Println("moving")
+				w.objects[toPoint] = o
 				delete(w.objects, fromPoint)
 			}
 		}

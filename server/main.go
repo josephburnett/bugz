@@ -1,7 +1,9 @@
 package main
 
-import server "github.com/josephburnett/colony/server/lib"
+import colony "github.com/josephburnett/colony/server/lib"
 
 func main() {
-	server.Serve()
+	w := colony.NewWorld()
+	w.NewColony(colony.Owner("joe"))
+	colony.Serve(w)
 }

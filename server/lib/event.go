@@ -1,6 +1,10 @@
 package colony
 
-import "log"
+import (
+	"encoding/json"
+	"log"
+	"time"
+)
 
 type Event interface {
 	isEvent()
@@ -18,9 +22,18 @@ func EventLoop(w *World) chan Event {
 			default:
 				log.Println("[ERROR] unknown event")
 			case *TickEvent:
-				log.Println("tick")
+				log.Println()
+				log.Println("TICK")
+				log.Println(time.Now())
 				w.Produce()
 				w.Advance()
+				view, err := json.Marshal(w.View(Owner("joe")))
+				if err != nil {
+					log.Println(err)
+				} else {
+					log.Println("view size")
+					log.Println(len(view))
+				}
 			case *UiProduceEvent:
 				c := w.owners[e.owner]
 				c.produce = true
