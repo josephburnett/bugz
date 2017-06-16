@@ -1,12 +1,13 @@
 package colony
 
-import "time"
+import (
+	"net/http"
+	"time"
+)
 
 func Serve(w *World) {
 	e := EventLoop(w)
 	defer close(e)
-	t := time.NewTicker(500 * time.Millisecond)
-	defer t.Stop()
 	go func() {
 		t := time.NewTicker(2000 * time.Millisecond)
 		defer t.Stop()
@@ -20,11 +21,17 @@ func Serve(w *World) {
 			}
 		}
 	}()
-	for {
-		_, ok := <-t.C
-		if !ok {
-			return
+	go func() {
+		t := time.NewTicker(500 * time.Millisecond)
+		defer t.Stop()
+		for {
+			_, ok := <-t.C
+			if !ok {
+				return
+			}
+			e <- &TickEvent{}
 		}
-		e <- &TickEvent{}
-	}
+	}()
+	http.HandleFunc("/ws", ClientWebsocket)
+	http.ListenAndServe("0.0.0.0:8081", nil)
 }

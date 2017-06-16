@@ -8,16 +8,17 @@ import (
 )
 
 type ClientMessage struct {
-	uiProduceEvent  UiProduceEvent
-	uiPhermoneEVent UiPhermoneEvent
+	UiProduceEvent  UiProduceEvent
+	UiPhermoneEVent UiPhermoneEvent
 }
 
 type ServerMessage struct {
+	WorldView *WorldView
 }
 
 var upgrader = websocket.Upgrader{}
 
-func conn(w http.ResponseWriter, r *http.Request) {
+func ClientWebsocket(w http.ResponseWriter, r *http.Request) {
 	c, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Println("upgrade:", err)
