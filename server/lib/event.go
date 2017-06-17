@@ -47,6 +47,17 @@ func EventLoop(w *World) chan Event {
 			}
 		}
 	}()
+	go func() {
+		t := time.NewTicker(500 * time.Millisecond)
+		defer t.Stop()
+		for {
+			_, ok := <-t.C
+			if !ok {
+				return
+			}
+			ch <- &TickEvent{}
+		}
+	}()
 	return ch
 }
 

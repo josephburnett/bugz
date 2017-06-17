@@ -41,6 +41,7 @@ type World struct {
 	phermones map[Owner]Phermones
 	objects   Objects
 	colonies  map[Point]*Colony
+	clients   Clients
 }
 
 func NewWorld() *World {

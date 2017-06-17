@@ -8,6 +8,7 @@ import (
 func Serve(w *World) {
 	e := EventLoop(w)
 	defer close(e)
+	// Testing
 	go func() {
 		t := time.NewTicker(2000 * time.Millisecond)
 		defer t.Stop()
@@ -21,17 +22,6 @@ func Serve(w *World) {
 			}
 		}
 	}()
-	go func() {
-		t := time.NewTicker(500 * time.Millisecond)
-		defer t.Stop()
-		for {
-			_, ok := <-t.C
-			if !ok {
-				return
-			}
-			e <- &TickEvent{}
-		}
-	}()
-	http.HandleFunc("/ws", ClientWebsocket)
-	http.ListenAndServe("0.0.0.0:8081", nil)
+	c := NewClients()
+	c.Serve(w, "0.0.0.0:8080")
 }
