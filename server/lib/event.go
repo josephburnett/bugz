@@ -1,80 +1,115 @@
 package colony
 
 import (
-	"encoding/json"
 	"log"
-	"time"
+)
+
+type EventType string
+
+const (
+	E_UI_PRODUCE   = EventType("ui-produce")
+	E_UI_PHERMONE  = EventType("ui-phermone")
+	E_TIME_TICK    = EventType("time-tick")
+	E_VIEW_REQUEST = EventType("view-request")
+	E_VIEW_UPDATE  = EventType("view-update")
 )
 
 type Event interface {
-	isEvent()
+	eventType() EventType
 }
 
-func EventLoop(w *World) chan Event {
-	ch := make(chan Event, 100)
+type EventLoop struct {
+	C       chan Event
+	World   *World
+	viewers map[Owner][]chan *WorldView
+}
+
+func (e *EventLoop) View(o Owner, c chan *WorldView) {
+	viewers, ok := e.viewers[o]
+	if !ok {
+		viewers = make([]chan *WorldView, 0)
+	}
+	e.viewers[o] = append(viewers, c)
+}
+
+func (e *EventLoop) Unview(o Owner, c chan *WorldView) {
+	viewers, ok := e.viewers[o]
+	if !ok {
+		return
+	}
+	for i, ch := range viewers {
+		if ch == c {
+			e.viewers[o] = append(viewers[:i], viewers[i+1:]...)
+			return
+		}
+	}
+}
+
+func (e *EventLoop) BroadcastView() {
+	for o, viewers := range e.viewers {
+		view := e.World.View(o)
+		for _, viewer := range viewers {
+			viewer <- view
+		}
+	}
+}
+
+func NewEventLoop(w *World) (e *EventLoop) {
+	e = &EventLoop{
+		C:       make(chan Event, 100),
+		World:   w,
+		viewers: make(map[Owner][]chan *WorldView),
+	}
 	go func() {
 		for {
-			event, ok := <-ch
+			event, ok := <-e.C
 			if !ok {
 				return
 			}
-			switch e := event.(type) {
+			switch event := event.(type) {
 			default:
 				log.Println("[ERROR] unknown event")
-			case *TickEvent:
-				log.Println()
-				log.Println("TICK")
-				log.Println(time.Now())
+			case *TimeTickEvent:
 				w.Produce()
 				w.Advance()
-				view, err := json.Marshal(w.View(Owner("joe")))
-				if err != nil {
-					log.Println(err)
-				} else {
-					log.Println("view size")
-					log.Println(len(view))
-				}
+				e.BroadcastView()
 			case *UiProduceEvent:
-				c := w.owners[e.owner]
-				c.produce = true
+				colony := w.owners[event.Owner]
+				colony.produce = true
 			case *UiPhermoneEvent:
-				p := w.phermones[e.owner]
-				if e.state {
-					p[e.point] = e.state
+				p := w.phermones[event.Owner]
+				if event.State {
+					p[event.Point] = event.State
 				} else {
-					delete(p, e.point)
+					delete(p, event.Point)
 				}
 			}
 		}
 	}()
-	go func() {
-		t := time.NewTicker(500 * time.Millisecond)
-		defer t.Stop()
-		for {
-			_, ok := <-t.C
-			if !ok {
-				return
-			}
-			ch <- &TickEvent{}
-		}
-	}()
-	return ch
+	return
 }
 
-type TickEvent struct{}
+type TimeTickEvent struct{}
 
-func (e *TickEvent) isEvent() {}
+func (e *TimeTickEvent) eventType() EventType { return E_TIME_TICK }
 
 type UiProduceEvent struct {
-	owner Owner
+	Owner Owner
 }
 
-func (e *UiProduceEvent) isEvent() {}
+func (e *UiProduceEvent) eventType() EventType { return E_UI_PRODUCE }
 
 type UiPhermoneEvent struct {
-	owner Owner
-	point Point
-	state bool
+	Owner Owner
+	Point Point
+	State bool
 }
 
-func (e *UiPhermoneEvent) isEvent() {}
+func (e *UiPhermoneEvent) eventType() EventType { return E_UI_PHERMONE }
+
+type ViewUpdateEvent struct {
+	Owner     Owner
+	WorldView *WorldView
+}
+
+func (e *ViewUpdateEvent) eventType() EventType { return E_VIEW_UPDATE }
