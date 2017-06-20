@@ -8,18 +8,17 @@ import (
 )
 
 type Clients struct {
-	clients        map[Owner][]chan *Message
-	clientMessages chan *Message
-	eventLoop      *EventLoop
+	clients       map[Owner][]chan *Message
+	viewingOwners map[Owner]chan *WorldView
+	eventLoop     *EventLoop
 }
 
 func NewClients(e *EventLoop) *Clients {
 	return &Clients{
-		clients:        make(map[Owner][]chan *Message),
-		clientMessages: make(chan *Message),
-		eventLoop:      e,
+		clients:       make(map[Owner][]chan *Message),
+		viewingOwners: make(map[Owner]chan *WorldView),
+		eventLoop:     e,
 	}
-	// TODO listen to view updates
 }
 
 func (c *Clients) BroadcastAll(msg *Message) {
@@ -45,6 +44,25 @@ func (c *Clients) Connect(o Owner, ch chan *Message) {
 		clients = make([]chan *Message, 0)
 	}
 	c.clients[o] = append(clients, ch)
+	if _, ok := c.viewingOwners[o]; !ok {
+		// TODO: discard overflow to prevent slow clients from blocking engine
+		ch := make(chan *WorldView, 10)
+		go func() {
+			view := <-ch
+			event := &ViewUpdateEvent{
+				Owner:     o,
+				WorldView: view,
+			}
+			msg := &Message{
+				Type:  event.eventType(),
+				Event: event,
+			}
+			for _, client := range c.clients[o] {
+				client <- msg
+			}
+		}()
+		c.eventLoop.View(o, ch)
+	}
 }
 
 func (c *Clients) Disconnect(o Owner, ch chan *Message) {
@@ -55,6 +73,9 @@ func (c *Clients) Disconnect(o Owner, ch chan *Message) {
 	for i, client := range clients {
 		if client == ch {
 			c.clients[o] = append(clients[:i], clients[i+1:]...)
+			if len(c.clients[o]) == 0 {
+				c.eventLoop.Unview(o, c.viewingOwners[o])
+			}
 			return
 		}
 	}
@@ -98,19 +119,21 @@ func (c *Clients) Serve(addr string) {
 						close(done)
 						return
 					}
-					c.eventLoop.C <- *(msg.Event)
+					c.eventLoop.C <- msg.Event
 				}
 			}()
 			<-done
 		}
 		http.HandleFunc("/ws", ClientWebsocket)
-		http.ListenAndServe("0.0.0.0:8081", nil)
+		http.ListenAndServe(addr, nil)
 	}()
 }
 
 type Message struct {
 	Type  EventType
-	Event *Event
+	Event Event
 }
 
-var upgrader = websocket.Upgrader{}
+var upgrader = websocket.Upgrader{
+	CheckOrigin: func(r *http.Request) bool { return true },
+}

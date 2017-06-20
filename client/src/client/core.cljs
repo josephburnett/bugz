@@ -1,6 +1,9 @@
 (ns client.core
+  (:require-macros [cljs.core.async.macros :refer [go-loop]]
+                   [cljs.core.async.macros :refer [go]])
   (:require [om.core :as om :include-macros true]
             [om.dom :as dom :include-macros true]
+            [cljs.core.async :refer [chan put! <! >!]]
             [chord.client :refer [ws-ch]]))
 
 (enable-console-print!)
@@ -32,12 +35,28 @@
           (dom/div nil (dom/table nil (apply dom/tbody nil (om/build-all row-view world)))))))))
 
 (om/root
-  (fn [data owner]
-    (reify om/IRender
-      (render [_]
-        (dom/div nil
-                 (dom/h1 nil (str "Owner: "(:owner data)))
-                 (om/build world-view (:world-view data))))))
+ (fn [data owner]
+   (reify
+     om/IRender
+     (render [_]
+       (dom/div nil
+                (dom/h1 nil (str "Owner: "(:owner data)))
+                (om/build world-view (:world-view data))))
+     om/IDidMount
+     (did-mount [_]
+       (go
+         (let [addr (str "ws://" (.-hostname js/location) ":8080/ws")
+               {:keys [ws-channel error]} (<! (ws-ch addr {:format :json}))]
+           (if error
+             (print error)
+             (go-loop []
+               (let [{:keys [message error]} (<! ws-channel)]
+                 (if (nil? message)
+                   (print "channel closed")
+                   (do
+                     (when (= "view-update" (get message "Type"))
+                       (om/transact! data #(assoc-in % [:world-view] (get-in message ["Event" "WorldView"]))))
+                     (when-not error (recur))))))))))))
   app-state
   {:target (. js/document (getElementById "app"))})
 
