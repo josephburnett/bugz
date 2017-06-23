@@ -20,9 +20,9 @@ func Serve(w *World) {
 		}
 	}()
 	// Testing
-	e.C <- &UiProduceEvent{
-		Owner: Owner("joe"),
-	}
+	// e.C <- &UiProduceEvent{
+	// 	Owner: Owner("joe"),
+	// }
 	// go func() {
 	// 	t := time.NewTicker(2000 * time.Millisecond)
 	// 	defer t.Stop()

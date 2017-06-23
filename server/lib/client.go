@@ -1,6 +1,7 @@
 package colony
 
 import (
+	"encoding/json"
 	"log"
 	"net/http"
 
@@ -114,14 +115,44 @@ func (c *Clients) Serve(addr string) {
 			}()
 			go func() {
 				for {
-					msg := &Message{}
-					err := conn.ReadJSON(msg)
+					_, message, err := conn.ReadMessage()
 					if err != nil {
 						log.Println("Error while reading from client: ", err)
-						done <- true
-						return
+						continue
 					}
-					c.eventLoop.C <- msg.Event
+					var msg interface{}
+					if err = json.Unmarshal(message, &msg); err != nil {
+						log.Println("Error while deserializing message from client: ", string(message))
+						continue
+					}
+					msgMap, ok := msg.(map[string]interface{})
+					if !ok {
+						log.Println("Unexpected structure in message from client: ", string(message))
+						continue
+					}
+					msgType, ok := msgMap["Type"]
+					if !ok {
+						log.Println("Message from client does not have Type: ", string(message))
+						continue
+					}
+					switch msgType {
+					case "ui-produce":
+						event, ok := msgMap["Event"].(map[string]interface{})
+						if !ok {
+							log.Println("Produce message from client does not have event: ", string(message))
+							continue
+						}
+						owner, ok := event["Owner"].(string)
+						if !ok {
+							log.Println("Produce event from client does not have owner: ", string(message))
+							continue
+						}
+						c.eventLoop.C <- &UiProduceEvent{
+							Owner: Owner(owner),
+						}
+					default:
+						log.Println("Unknown message type from client: ", message)
+					}
 				}
 			}()
 			<-done

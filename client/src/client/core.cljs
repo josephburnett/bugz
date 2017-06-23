@@ -8,10 +8,6 @@
 
 (enable-console-print!)
 
-(println "This text is printed from src/client/core.cljs. Go ahead and edit it and see reloading in action.")
-
-;; define your app data so that it doesn't get over-written on reload
-
 (defonce app-state (atom {:owner "joe"
                           :world-view {}}))
 
@@ -49,22 +45,20 @@
                {:keys [ws-channel error]} (<! (ws-ch addr {:format :json}))]
            (if error
              (print error)
-             (go-loop []
-               (print "listening")
-               (let [{:keys [message error]} (<! ws-channel)]
-                 (if (nil? message)
-                   (print "channel closed")
-                   (do
-                     (print "got message")
-                     (when (= "view-update" (get message "Type"))
-                       (print "message is a view-update")
-                       (om/transact! data #(assoc-in % [:world-view] (get-in message ["Event" "WorldView"]))))
-                     (when-not error (recur))))))))))))
+             (do
+               (set! (.-onkeydown js/document.body)
+                     (fn [e] (go (>! ws-channel (clj->js {"Type" "ui-produce"
+                                                          "Event" {"Owner" "joe"}})))))
+               (go-loop []
+                 (print "listening")
+                 (let [{:keys [message error]} (<! ws-channel)]
+                   (if (nil? message)
+                     (print "channel closed")
+                     (do
+                       (print "got message")
+                       (when (= "view-update" (get message "Type"))
+                         (print "message is a view-update")
+                         (om/transact! data #(assoc-in % [:world-view] (get-in message ["Event" "WorldView"]))))
+                       (when-not error (recur)))))))))))))
   app-state
   {:target (. js/document (getElementById "app"))})
-
-(defn on-js-reload []
-  ;; optionally touch your app-state to force rerendering depending on
-  ;; your application
-  ;; (swap! app-state update-in [:__figwheel_counter] inc)
-)
