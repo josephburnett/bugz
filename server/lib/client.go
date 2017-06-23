@@ -48,17 +48,19 @@ func (c *Clients) Connect(o Owner, ch chan *Message) {
 		// TODO: discard overflow to prevent slow clients from blocking engine
 		ch := make(chan *WorldView, 10)
 		go func() {
-			view := <-ch
-			event := &ViewUpdateEvent{
-				Owner:     o,
-				WorldView: view,
-			}
-			msg := &Message{
-				Type:  event.eventType(),
-				Event: event,
-			}
-			for _, client := range c.clients[o] {
-				client <- msg
+			for {
+				view := <-ch
+				event := &ViewUpdateEvent{
+					Owner:     o,
+					WorldView: view,
+				}
+				msg := &Message{
+					Type:  event.eventType(),
+					Event: event,
+				}
+				for _, client := range c.clients[o] {
+					client <- msg
+				}
 			}
 		}()
 		c.eventLoop.View(o, ch)
@@ -94,12 +96,12 @@ func (c *Clients) Serve(addr string) {
 			defer close(clientChan)
 			c.Connect("joe", clientChan)
 			defer c.Disconnect("joe", clientChan)
-			done := make(chan struct{})
+			done := make(chan bool)
 			go func() {
 				for {
 					msg, ok := <-clientChan
 					if !ok {
-						close(done)
+						done <- true
 						return
 					}
 					err = conn.WriteJSON(msg)
@@ -116,7 +118,7 @@ func (c *Clients) Serve(addr string) {
 					err := conn.ReadJSON(msg)
 					if err != nil {
 						log.Println("Error while reading from client: ", err)
-						close(done)
+						done <- true
 						return
 					}
 					c.eventLoop.C <- msg.Event

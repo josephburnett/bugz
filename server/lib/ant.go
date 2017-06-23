@@ -46,16 +46,16 @@ func (a *Ant) Move(o Objects, p Phermones) Point {
 		log.Println("following a phermone")
 		return randomChoice()
 	}
-	for _, d := range a.direction.InFront() {
-		target := a.point.Plus(d)
-		if possible(d) {
-			options = append(options, target)
-		}
-	}
-	if len(options) > 0 {
-		log.Println("following momentum")
-		return randomChoice()
-	}
+	// for _, d := range a.direction.InFront() {
+	// 	target := a.point.Plus(d)
+	// 	if possible(d) {
+	// 		options = append(options, target)
+	// 	}
+	// }
+	// if len(options) > 0 {
+	// 	log.Println("following momentum")
+	// 	return randomChoice()
+	// }
 	for _, d := range a.direction.Around() {
 		target := a.point.Plus(d)
 		if possible(d) {

@@ -18,8 +18,8 @@
 (defn cell-view [cell _]
   (reify om/IRender
     (render [_]
-      (dom/td nil
-             (if (nil? (:Object cell)) "0" "1")))))
+      (dom/td #js {:style #js {:width "20px" :height "20px"}}
+             (if (nil? (get cell "Object")) "" "A")))))
 
 (defn row-view [row _]
   (reify om/IRender
@@ -29,10 +29,10 @@
 (defn world-view [world _]
   (reify om/IRender
     (render [_]
-      (if-not (contains? world :PointsView)
+      (if-not (contains? world "Points")
         (dom/div nil (dom/h2 nil "Loading..."))
-        (let [points (:PointsView world)]
-          (dom/div nil (dom/table nil (apply dom/tbody nil (om/build-all row-view world)))))))))
+        (let [rows (get world "Points")]
+          (dom/div nil (dom/table nil (apply dom/tbody nil (om/build-all row-view rows)))))))))
 
 (om/root
  (fn [data owner]
@@ -50,11 +50,14 @@
            (if error
              (print error)
              (go-loop []
+               (print "listening")
                (let [{:keys [message error]} (<! ws-channel)]
                  (if (nil? message)
                    (print "channel closed")
                    (do
+                     (print "got message")
                      (when (= "view-update" (get message "Type"))
+                       (print "message is a view-update")
                        (om/transact! data #(assoc-in % [:world-view] (get-in message ["Event" "WorldView"]))))
                      (when-not error (recur))))))))))))
   app-state
