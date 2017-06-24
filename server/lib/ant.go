@@ -47,8 +47,18 @@ func (a *Ant) Move(o Objects, p Phermones) Point {
 		a.endurance = a.endurance - 1
 		return a.point
 	}
-	// Follow a phermone, always
+	// Follow a phermone, in front
 	for _, d := range a.direction.InFront() {
+		target := a.point.Plus(d)
+		if _, hasPhermone := p[target]; hasPhermone && possible(d) {
+			options = append(options, d)
+		}
+	}
+	if len(options) > 0 {
+		return move()
+	}
+	// Follow a phermone, in periphery
+	for _, d := range a.direction.InPeriphery() {
 		target := a.point.Plus(d)
 		if _, hasPhermone := p[target]; hasPhermone && possible(d) {
 			options = append(options, d)

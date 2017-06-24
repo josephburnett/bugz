@@ -58,6 +58,7 @@ func (w *World) NewColony(o Owner) {
 		point: Point{0, 0},
 	}
 	w.owners[o] = c
+	w.phermones[o] = make(Phermones)
 	w.colonies[c.Point()] = c
 }
 

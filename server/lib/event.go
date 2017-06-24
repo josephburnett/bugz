@@ -2,6 +2,7 @@ package colony
 
 import (
 	"errors"
+	"fmt"
 	"log"
 )
 
@@ -77,7 +78,11 @@ func NewEventLoop(w *World) (e *EventLoop) {
 				colony := w.owners[event.Owner]
 				colony.produce = true
 			case *UiPhermoneEvent:
-				p := w.phermones[event.Owner]
+				p, ok := w.phermones[event.Owner]
+				if !ok {
+					log.Println("[ERROR] phermone event for unknown owner: ", event.Owner)
+					continue
+				}
 				if event.State {
 					p[event.Point] = event.State
 				} else {
@@ -122,6 +127,35 @@ func UnmarshalEvent(t EventType, event map[string]interface{}) (Event, error) {
 			return nil, errors.New("Produce event from client does not have owner")
 		}
 		return &UiProduceEvent{Owner: Owner(owner)}, nil
+	case E_UI_PHERMONE:
+		owner, ok := event["Owner"].(string)
+		if !ok {
+			return nil, errors.New("Phermone event from client does not have owner")
+		}
+		point, ok := event["Point"].([]interface{})
+		if !ok {
+			return nil, errors.New("Phermone event from client does not have point")
+		}
+		if len(point) != 2 {
+			return nil, errors.New("Point must have exactly two values")
+		}
+		x, ok := point[0].(float64)
+		if !ok {
+			return nil, fmt.Errorf("Point x must be an number (%T)", point[0])
+		}
+		y, ok := point[1].(float64)
+		if !ok {
+			return nil, fmt.Errorf("Point y must be an number (%T)", point[0])
+		}
+		state, ok := event["State"].(bool)
+		if !ok {
+			return nil, errors.New("Phermone event from client does not have state")
+		}
+		return &UiPhermoneEvent{
+			Owner: Owner(owner),
+			Point: Point([2]int{int(x), int(y)}),
+			State: state,
+		}, nil
 	default:
 		return nil, errors.New("Unknown message type from client")
 	}

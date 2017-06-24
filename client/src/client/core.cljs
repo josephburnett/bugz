@@ -11,16 +11,28 @@
 (defonce app-state (atom {:owner "joe"
                           :world-view {}}))
 
+(defonce messages (chan))
+
 (def ant "⚈")
 (def color-dirt "#d3b383")
 (def color-colony "#3d2501")
+(def color-phermone "#ce9c52")
 (def color-ant "#b50c03")
 
 (defn cell-view [cell _]
   (reify om/IRender
     (render [_]
-      (dom/td #js {:style #js {:width "20px" :height "20px"
-                               :background (if (get cell "Colony") color-colony color-dirt)
+      (dom/td #js {:onClick #(do
+                               (om/update! cell ["Phermone"] (not (get cell "Phermone")))
+                               (go (>! messages (clj->js {"Type" "ui-phermone"
+                                                          "Event" {"Owner" "joe"
+                                                                   "Point" (get cell "Point")
+                                                                   "State" (not (get cell "Phermone"))}}))))
+                   :style #js {:width "20px" :height "20px"
+                               :background (cond
+                                             (get cell "Colony") color-colony
+                                             (get cell "Phermone") color-phermone
+                                             :default color-dirt)
                                :color color-ant}}
               (cond
                 (nil? (get cell "Object")) (dom/div nil "")
@@ -52,8 +64,7 @@
    (reify
      om/IRender
      (render [_]
-       (dom/div nil
-                (om/build world-view (:world-view data))))
+       (dom/div nil (om/build world-view (:world-view data))))
      om/IDidMount
      (did-mount [_]
        (go
@@ -62,11 +73,15 @@
            (if error
              (print error)
              (do
+               (go-loop []
+                 (let [msg (<! messages)]
+                   (>! ws-channel msg))
+                 (recur))
                (set! (.-onkeydown js/document.body)
                      (fn [e]
                        (when (= " " (.-key e))
-                         (go (>! ws-channel (clj->js {"Type" "ui-produce"
-                                                      "Event" {"Owner" "joe"}}))))))
+                         (go (>! messages (clj->js {"Type" "ui-produce"
+                                                    "Event" {"Owner" "joe"}}))))))
                (go-loop []
                  (let [{:keys [message error]} (<! ws-channel)]
                    (if (nil? message)

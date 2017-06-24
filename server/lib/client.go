@@ -143,7 +143,7 @@ func (c *Clients) Serve(addr string) {
 					}
 					event, err := UnmarshalEvent(EventType(msgType), msgEvent)
 					if err != nil {
-						log.Println(err.Error, ": ", string(message))
+						log.Println(err.Error(), ": ", string(message))
 						continue
 					}
 					c.eventLoop.C <- event
