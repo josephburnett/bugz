@@ -87,6 +87,7 @@ func (c *Clients) Disconnect(o Owner, ch chan *Message) {
 func (c *Clients) Serve(addr string) {
 	go func() {
 		ClientWebsocket := func(w http.ResponseWriter, r *http.Request) {
+			log.Println("Connected client")
 			conn, err := upgrader.Upgrade(w, r, nil)
 			if err != nil {
 				log.Println("Error while upgrading: ", err)
@@ -156,6 +157,7 @@ func (c *Clients) Serve(addr string) {
 				}
 			}()
 			<-done
+			log.Println("Disconnected client")
 		}
 		http.HandleFunc("/ws", ClientWebsocket)
 		http.ListenAndServe(addr, nil)

@@ -1,7 +1,5 @@
 package colony
 
-import "log"
-
 var _ Object = &Ant{}
 var _ AnimateObject = &Ant{}
 
@@ -12,7 +10,10 @@ type Ant struct {
 	speed     int
 	strength  int
 	endurance int
+	cycle     int
 }
+
+var CYCLE = 9
 
 func (a *Ant) Owner() Owner {
 	return a.owner
@@ -23,6 +24,13 @@ func (a *Ant) Point() Point {
 }
 
 func (a *Ant) Move(o Objects, p Phermones) Point {
+	// Die
+	if a.endurance == 0 {
+		a.strength = 0
+		return a.point
+	}
+	// Advance behavior cycle
+	a.cycle = (a.cycle + 1) % CYCLE
 	possible := func(d Direction) bool {
 		newPoint := a.point.Plus(d)
 		object, exists := o[newPoint]
@@ -31,42 +39,50 @@ func (a *Ant) Move(o Objects, p Phermones) Point {
 		}
 		return false
 	}
-	options := make([]Point, 0, 8)
-	randomChoice := func() Point {
-		a.point = RandomPoint(options)
+	options := make([]Direction, 0, 8)
+	move := func() Point {
+		d := RandomDirection(options)
+		a.point = a.point.Plus(d)
+		a.direction = d
+		a.endurance = a.endurance - 1
 		return a.point
 	}
+	// Follow a phermone, always
 	for _, d := range a.direction.InFront() {
 		target := a.point.Plus(d)
 		if _, hasPhermone := p[target]; hasPhermone && possible(d) {
-			options = append(options, target)
+			options = append(options, d)
 		}
 	}
 	if len(options) > 0 {
-		log.Println("following a phermone")
-		return randomChoice()
+		return move()
 	}
-	// for _, d := range a.direction.InFront() {
-	// 	target := a.point.Plus(d)
-	// 	if possible(d) {
-	// 		options = append(options, target)
-	// 	}
-	// }
-	// if len(options) > 0 {
-	// 	log.Println("following momentum")
-	// 	return randomChoice()
-	// }
-	for _, d := range a.direction.Around() {
-		target := a.point.Plus(d)
-		if possible(d) {
-			options = append(options, target)
+	switch a.cycle {
+	default:
+		// Follow momentum
+		for _, d := range a.direction.InFront() {
+			if possible(d) {
+				options = append(options, d)
+			}
+		}
+		if len(options) > 0 {
+			return move()
+		}
+	case CYCLE - 2:
+		// Stay put
+		return a.point
+	case CYCLE - 1:
+		// Random move
+		for _, d := range a.direction.Around() {
+			if possible(d) {
+				options = append(options, d)
+			}
+		}
+		if len(options) > 0 {
+			return move()
 		}
 	}
-	if len(options) > 0 {
-		log.Println("choosing random direction")
-		return randomChoice()
-	}
-	log.Println("boxed in")
+	// Boxed in
 	return a.point
 }
 

@@ -1,7 +1,6 @@
 package colony
 
 import (
-	"log"
 	"math/rand"
 )
 
@@ -85,23 +84,17 @@ func (w *World) Advance() {
 		if ao, ok := o.(AnimateObject); ok {
 			fromPoint := o.Point()
 			toPoint := ao.Move(w.objects, w.phermones[o.Owner()])
-			log.Println("moving object")
-			log.Println(fromPoint)
-			log.Println(toPoint)
 			if fromPoint.Equals(toPoint) {
-				log.Println("staying put")
 				continue
 			}
 			target, occupied := w.objects[toPoint]
 			if occupied {
-				log.Println("fighting")
 				win := ao.Attack(target)
 				if win {
 					w.objects[toPoint] = o
 				}
 				delete(w.objects, fromPoint)
 			} else {
-				log.Println("moving")
 				w.objects[toPoint] = o
 				delete(w.objects, fromPoint)
 			}

@@ -38,9 +38,9 @@ func (d Direction) Around() []Direction {
 	return D_AROUND
 }
 
-func RandomPoint(p []Point) Point {
-	if len(p) == 1 {
-		return p[0]
+func RandomDirection(d []Direction) Direction {
+	if len(d) == 1 {
+		return d[0]
 	}
-	return p[rand.Intn(len(p))]
+	return d[rand.Intn(len(d))]
 }

@@ -1,9 +1,9 @@
 package colony
 
 type Colony struct {
-	owner     Owner
-	point     Point
-	produce   bool
+	owner   Owner
+	point   Point
+	produce bool
 }
 
 func (c *Colony) Owner() Owner {
@@ -20,12 +20,12 @@ func (c *Colony) Produce(o Objects) (*Ant, bool) {
 		if !obstructed {
 			c.produce = false
 			return &Ant{
-				owner: c.owner,
-				point: c.point,
-				direction: Direction{1,0},
-				speed: 5,
-				strength: 2,
-				endurance: 10,
+				owner:     c.owner,
+				point:     c.point,
+				direction: RandomDirection(D_AROUND),
+				speed:     5,
+				strength:  2,
+				endurance: 20,
 			}, true
 		}
 	}
