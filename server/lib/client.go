@@ -119,7 +119,7 @@ func (c *Clients) Serve(addr string) {
 					_, message, err := conn.ReadMessage()
 					if err != nil {
 						log.Println("Error while reading from client: ", err)
-						continue
+						return
 					}
 					var msg interface{}
 					if err = json.Unmarshal(message, &msg); err != nil {
