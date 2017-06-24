@@ -1,6 +1,7 @@
 package colony
 
 import (
+	"errors"
 	"log"
 )
 
@@ -112,3 +113,16 @@ type ViewUpdateEvent struct {
 }
 
 func (e *ViewUpdateEvent) eventType() EventType { return E_VIEW_UPDATE }
+
+func UnmarshalEvent(t EventType, event map[string]interface{}) (Event, error) {
+	switch t {
+	case E_UI_PRODUCE:
+		owner, ok := event["Owner"].(string)
+		if !ok {
+			return nil, errors.New("Produce event from client does not have owner")
+		}
+		return &UiProduceEvent{Owner: Owner(owner)}, nil
+	default:
+		return nil, errors.New("Unknown message type from client")
+	}
+}

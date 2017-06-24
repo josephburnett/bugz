@@ -128,32 +128,25 @@ func (c *Clients) Serve(addr string) {
 					}
 					msgMap, ok := msg.(map[string]interface{})
 					if !ok {
-						log.Println("Unexpected structure in message from client: ", string(message))
+						log.Println("Unexpected structure of message from client: ", string(message))
 						continue
 					}
-					msgType, ok := msgMap["Type"]
+					msgType, ok := msgMap["Type"].(string)
 					if !ok {
 						log.Println("Message from client does not have Type: ", string(message))
 						continue
 					}
-					switch msgType {
-					case "ui-produce":
-						event, ok := msgMap["Event"].(map[string]interface{})
-						if !ok {
-							log.Println("Produce message from client does not have event: ", string(message))
-							continue
-						}
-						owner, ok := event["Owner"].(string)
-						if !ok {
-							log.Println("Produce event from client does not have owner: ", string(message))
-							continue
-						}
-						c.eventLoop.C <- &UiProduceEvent{
-							Owner: Owner(owner),
-						}
-					default:
-						log.Println("Unknown message type from client: ", message)
+					msgEvent, ok := msgMap["Event"].(map[string]interface{})
+					if !ok {
+						log.Println("Message from client does not have event: ", string(message))
+						continue
 					}
+					event, err := UnmarshalEvent(EventType(msgType), msgEvent)
+					if err != nil {
+						log.Println(err.Error, ": ", string(message))
+						continue
+					}
+					c.eventLoop.C <- event
 				}
 			}()
 			<-done
