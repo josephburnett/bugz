@@ -57,8 +57,8 @@ func (a *Ant) Move(o Objects, p Phermones) Point {
 	if len(options) > 0 {
 		return move()
 	}
-	// Follow a phermone, in periphery
-	for _, d := range a.direction.InPeriphery() {
+	// Follow a phermone, near by
+	for _, d := range Around() {
 		target := a.point.Plus(d)
 		if _, hasPhermone := p[target]; hasPhermone && possible(d) {
 			options = append(options, d)
@@ -83,7 +83,7 @@ func (a *Ant) Move(o Objects, p Phermones) Point {
 		return a.point
 	case CYCLE - 1:
 		// Random move
-		for _, d := range a.direction.Around() {
+		for _, d := range Around() {
 			if possible(d) {
 				options = append(options, d)
 			}
