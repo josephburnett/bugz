@@ -11,11 +11,28 @@
 (defonce app-state (atom {:owner "joe"
                           :world-view {}}))
 
+(def ant "⚈")
+(def color-dirt "#d3b383")
+(def color-colony "#3d2501")
+(def color-ant "#b50c03")
+
 (defn cell-view [cell _]
   (reify om/IRender
     (render [_]
-      (dom/td #js {:style #js {:width "20px" :height "20px"}}
-             (if (nil? (get cell "Object")) "" "A")))))
+      (dom/td #js {:style #js {:width "20px" :height "20px"
+                               :background (if (get cell "Colony") color-colony color-dirt)
+                               :color color-ant}}
+              (cond
+                (nil? (get cell "Object")) (dom/div nil "")
+                :default (condp = (get-in cell ["Object" "Direction"])
+                           [1,0] (dom/div #js {:className "right"} ant)
+                           [1,-1] (dom/div #js {:className "down-right"} ant)
+                           [0,-1] (dom/div #js {:className "down"} ant)
+                           [-1,-1] (dom/div #js {:className "down-left"} ant)
+                           [-1,0] (dom/div #js {:className "left"} ant)
+                           [-1,1] (dom/div #js {:className "up-left"} ant)
+                           [0,1] (dom/div #js {:className "up"} ant)
+                           [1,1] (dom/div #js {:className "up-right"} ant)))))))
 
 (defn row-view [row _]
   (reify om/IRender
@@ -36,7 +53,6 @@
      om/IRender
      (render [_]
        (dom/div nil
-                (dom/h1 nil (str "Owner: "(:owner data)))
                 (om/build world-view (:world-view data))))
      om/IDidMount
      (did-mount [_]
@@ -47,17 +63,16 @@
              (print error)
              (do
                (set! (.-onkeydown js/document.body)
-                     (fn [e] (go (>! ws-channel (clj->js {"Type" "ui-produce"
-                                                          "Event" {"Owner" "joe"}})))))
+                     (fn [e]
+                       (when (= " " (.-key e))
+                         (go (>! ws-channel (clj->js {"Type" "ui-produce"
+                                                      "Event" {"Owner" "joe"}}))))))
                (go-loop []
-                 (print "listening")
                  (let [{:keys [message error]} (<! ws-channel)]
                    (if (nil? message)
                      (print "channel closed")
                      (do
-                       (print "got message")
                        (when (= "view-update" (get message "Type"))
-                         (print "message is a view-update")
                          (om/transact! data #(assoc-in % [:world-view] (get-in message ["Event" "WorldView"]))))
                        (when-not error (recur)))))))))))))
   app-state
