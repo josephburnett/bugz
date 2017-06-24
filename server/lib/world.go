@@ -61,20 +61,12 @@ func (w *World) NewColony(o Owner) {
 	w.colonies[c.Point()] = c
 }
 
-func (w *World) Produce() {
-	for _, c := range w.colonies {
-		ant, produced := c.Produce(w.objects)
-		if produced {
-			w.objects[ant.Point()] = ant
-		}
-	}
-}
-
 func (w *World) Advance() {
 	objects := make([]Object, 0, len(w.objects))
 	for _, o := range w.objects {
 		objects = append(objects, o)
 	}
+	// Move objects
 	perm := rand.Perm(len(objects))
 	for _, i := range perm {
 		o := objects[i]
@@ -100,6 +92,14 @@ func (w *World) Advance() {
 			}
 		}
 	}
+	// Produce objects
+	for _, c := range w.colonies {
+		ant, produced := c.Produce(w.objects)
+		if produced {
+			w.objects[ant.Point()] = ant
+		}
+	}
+	// Remove the dead
 	for _, o := range w.objects {
 		if o.Dead() {
 			delete(w.objects, o.Point())

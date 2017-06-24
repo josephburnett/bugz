@@ -70,7 +70,6 @@ func NewEventLoop(w *World) (e *EventLoop) {
 			default:
 				log.Println("[ERROR] unknown event")
 			case *TimeTickEvent:
-				w.Produce()
 				w.Advance()
 				e.BroadcastView()
 			case *UiProduceEvent:
