@@ -50,6 +50,10 @@ func (e *EventLoop) Unview(o Owner, c chan *WorldView) {
 
 func (e *EventLoop) BroadcastView() {
 	for o, viewers := range e.viewers {
+		if _, exists := e.World.owners[o]; !exists {
+			delete(e.viewers, o)
+			return
+		}
 		view := e.World.View(o)
 		for _, viewer := range viewers {
 			viewer <- view
@@ -80,8 +84,10 @@ func NewEventLoop(w *World) (e *EventLoop) {
 					w.NewColony(event.Owner)
 				}
 			case *UiProduceEvent:
-				colony := w.owners[event.Owner]
-				colony.produce = true
+				colony, ok := w.owners[event.Owner]
+				if ok {
+					colony.produce = true
+				}
 			case *UiPhermoneEvent:
 				p, ok := w.phermones[event.Owner]
 				if !ok {

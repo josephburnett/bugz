@@ -1,6 +1,7 @@
 package colony
 
 import (
+	"log"
 	"math/rand"
 )
 
@@ -70,6 +71,17 @@ func (w *World) NewColony(o Owner) {
 	w.owners[o] = c
 	w.phermones[o] = make(Phermones)
 	w.colonies[p] = c
+	log.Println("Created new colony " + o)
+}
+
+func (w *World) KillColony(o Owner) {
+	c, ok := w.owners[o]
+	if !ok {
+		return
+	}
+	delete(w.owners, o)
+	delete(w.phermones, o)
+	delete(w.colonies, c.Point())
 }
 
 func (w *World) Advance() {
@@ -87,6 +99,15 @@ func (w *World) Advance() {
 		if ao, ok := o.(AnimateObject); ok {
 			fromPoint := o.Point()
 			toPoint := ao.Move(w.objects, w.phermones[o.Owner()])
+			move := func() {
+				w.objects[toPoint] = o
+				if colony, present := w.colonies[toPoint]; present {
+					if colony.Owner() != o.Owner() {
+						w.KillColony(colony.Owner())
+						log.Println(o.Owner() + " kills the colony of " + colony.Owner())
+					}
+				}
+			}
 			if fromPoint.Equals(toPoint) {
 				continue
 			}
@@ -94,11 +115,14 @@ func (w *World) Advance() {
 			if occupied {
 				win := ao.Attack(target)
 				if win {
-					w.objects[toPoint] = o
+					log.Println(o.Owner() + " kills an ant of " + target.Owner())
+					move()
+				} else {
+					log.Println(o.Owner() + " ant is killed by " + target.Owner())
 				}
 				delete(w.objects, fromPoint)
 			} else {
-				w.objects[toPoint] = o
+				move()
 				delete(w.objects, fromPoint)
 			}
 		}
