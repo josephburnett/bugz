@@ -24,13 +24,6 @@ func (a *Ant) Point() Point {
 }
 
 func (a *Ant) Move(o Objects, p Phermones) Point {
-	// Die
-	if a.endurance == 0 {
-		a.strength = 0
-		return a.point
-	}
-	// Advance behavior cycle
-	a.cycle = (a.cycle + 1) % CYCLE
 	possible := func(d Direction) bool {
 		newPoint := a.point.Plus(d)
 		object, exists := o[newPoint]
@@ -47,6 +40,13 @@ func (a *Ant) Move(o Objects, p Phermones) Point {
 		a.endurance = a.endurance - 1
 		return a.point
 	}
+	// Die
+	if a.endurance == 0 {
+		a.strength = 0
+		return a.point
+	}
+	// Advance behavior cycle
+	a.cycle = (a.cycle + 1) % CYCLE
 	// Follow a phermone, in front
 	for _, d := range a.direction.InFront() {
 		target := a.point.Plus(d)

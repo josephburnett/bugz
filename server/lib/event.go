@@ -11,6 +11,7 @@ type EventType string
 const (
 	E_UI_PRODUCE   = EventType("ui-produce")
 	E_UI_PHERMONE  = EventType("ui-phermone")
+	E_UI_CONNECT   = EventType("ui-connect")
 	E_TIME_TICK    = EventType("time-tick")
 	E_VIEW_REQUEST = EventType("view-request")
 	E_VIEW_UPDATE  = EventType("view-update")
@@ -74,6 +75,10 @@ func NewEventLoop(w *World) (e *EventLoop) {
 			case *TimeTickEvent:
 				w.Advance()
 				e.BroadcastView()
+			case *UiConnectEvent:
+				if _, exists := w.owners[event.Owner]; !exists {
+					w.NewColony(event.Owner)
+				}
 			case *UiProduceEvent:
 				colony := w.owners[event.Owner]
 				colony.produce = true
@@ -112,6 +117,12 @@ type UiPhermoneEvent struct {
 
 func (e *UiPhermoneEvent) eventType() EventType { return E_UI_PHERMONE }
 
+type UiConnectEvent struct {
+	Owner Owner
+}
+
+func (e *UiConnectEvent) eventType() EventType { return E_UI_CONNECT }
+
 type ViewUpdateEvent struct {
 	Owner     Owner
 	WorldView *WorldView
@@ -121,6 +132,12 @@ func (e *ViewUpdateEvent) eventType() EventType { return E_VIEW_UPDATE }
 
 func UnmarshalEvent(t EventType, event map[string]interface{}) (Event, error) {
 	switch t {
+	case E_UI_CONNECT:
+		owner, ok := event["Owner"].(string)
+		if !ok {
+			return nil, errors.New("Connect event from client does not have owner")
+		}
+		return &UiConnectEvent{Owner: Owner(owner)}, nil
 	case E_UI_PRODUCE:
 		owner, ok := event["Owner"].(string)
 		if !ok {

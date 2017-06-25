@@ -25,7 +25,7 @@ func (c *Colony) Produce(o Objects) (*Ant, bool) {
 				direction: RandomDirection(D_AROUND),
 				speed:     5,
 				strength:  2,
-				endurance: 30,
+				endurance: 60,
 			}, true
 		}
 	}

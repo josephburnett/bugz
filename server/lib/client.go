@@ -87,18 +87,29 @@ func (c *Clients) Disconnect(o Owner, ch chan *Message) {
 func (c *Clients) Serve(addr string) {
 	go func() {
 		ClientWebsocket := func(w http.ResponseWriter, r *http.Request) {
-			log.Println("Connected client")
-			conn, err := upgrader.Upgrade(w, r, nil)
-			if err != nil {
-				log.Println("Error while upgrading: ", err)
+			owner := r.URL.Path[len("/ws/owner/"):]
+			if owner == "" {
+				http.Error(w, "Owner is a required parameter", http.StatusBadRequest)
 				return
 			}
+			conn, err := upgrader.Upgrade(w, r, nil)
+			if err != nil {
+				http.Error(w, "Error while upgrading to websocket: "+err.Error(), http.StatusInternalServerError)
+				return
+			}
+			log.Println("Connected client: ", owner)
 			defer conn.Close()
+			// Create Colony if necessary
+			c.eventLoop.C <- &UiConnectEvent{
+				Owner: Owner(owner),
+			}
+			// Register channel for communication with the client
 			clientChan := make(chan *Message, 10)
 			defer close(clientChan)
-			c.Connect("joe", clientChan)
-			defer c.Disconnect("joe", clientChan)
+			c.Connect(Owner(owner), clientChan)
+			defer c.Disconnect(Owner(owner), clientChan)
 			done := make(chan bool)
+			// Pipeline messages to client
 			go func() {
 				for {
 					msg, ok := <-clientChan
@@ -114,6 +125,7 @@ func (c *Clients) Serve(addr string) {
 					}
 				}
 			}()
+			// Unwrap message to server
 			go func() {
 				for {
 					_, message, err := conn.ReadMessage()
@@ -152,7 +164,7 @@ func (c *Clients) Serve(addr string) {
 			<-done
 			log.Println("Disconnected client")
 		}
-		http.HandleFunc("/ws", ClientWebsocket)
+		http.HandleFunc("/ws/owner/", ClientWebsocket)
 		http.ListenAndServe(addr, nil)
 	}()
 }
@@ -163,5 +175,6 @@ type Message struct {
 }
 
 var upgrader = websocket.Upgrader{
+	// TODO: remove cross origin permission for production
 	CheckOrigin: func(r *http.Request) bool { return true },
 }
