@@ -40,8 +40,8 @@ func (w *World) View(owner Owner) *WorldView {
 			if present {
 				pv.Phermone = true
 			}
-			colony, exists := w.colonies[point]
-			if exists && colony.owner == owner {
+			_, exists = w.colonies[point]
+			if exists {
 				pv.Colony = true
 			}
 			row = append(row, pv)

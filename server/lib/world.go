@@ -53,13 +53,23 @@ func NewWorld() *World {
 }
 
 func (w *World) NewColony(o Owner) {
+	var p Point
+	for {
+		p = Point{
+			rand.Intn(40) - 20,
+			rand.Intn(40) - 20,
+		}
+		if _, occupied := w.colonies[p]; !occupied {
+			break
+		}
+	}
 	c := &Colony{
 		owner: o,
-		point: Point{0, 0},
+		point: p,
 	}
 	w.owners[o] = c
 	w.phermones[o] = make(Phermones)
-	w.colonies[c.Point()] = c
+	w.colonies[p] = c
 }
 
 func (w *World) Advance() {

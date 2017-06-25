@@ -35,8 +35,9 @@
               (if (nil? msg)
                 (print "server channel closed")
                 (do
-                  (>! ws-channel msg)
-                  (recur)))))
+                  (let [owned-msg (clj->js (assoc-in msg ["Event" "Owner"] owner))]
+                    (>! ws-channel owned-msg)
+                    (recur))))))
           (go-loop []
             (let [{:keys [message error]} (<! ws-channel)]
               (if (nil? message)
@@ -50,10 +51,9 @@
     (render [_]
       (dom/td #js {:onClick #(do
                                (om/update! cell ["Phermone"] (not (get cell "Phermone")))
-                               (go (>! server-channel (clj->js {"Type" "ui-phermone"
-                                                           "Event" {"Owner" "joe"
-                                                                    "Point" (get cell "Point")
-                                                                    "State" (not (get cell "Phermone"))}}))))
+                               (go (>! server-channel {"Type" "ui-phermone"
+                                                       "Event" {"Point" (get cell "Point")
+                                                                "State" (not (get cell "Phermone"))}})))
                    :style #js {:width "20px" :height "20px"
                                :background (cond
                                              (get cell "Colony") color-colony
@@ -90,19 +90,19 @@
       (set! (.-onkeydown js/document.body)
             (fn [e]
               (when (= " " (.-key e))
-                (go (>! server-channel (clj->js {"Type" "ui-produce"
-                                                 "Event" {"Owner" "joe"}}))))))
+                (go (>! server-channel {"Type" "ui-produce"
+                                        "Event" {}})))))
       (go-loop []
         (let [msg (<! client-channel)]
           (when (= "view-update" (get msg "Type"))
             (om/update! world (get-in msg ["Event" "WorldView"]))))
         (recur)))))
 
-(defn owner-selection [data _]
+(defn owner-selection [data owner]
   (reify
     om/IInitState
     (init-state [_]
-      {:owner "joe"})
+      {:owner ""})
     om/IRenderState
     (render-state [_ state]
       (dom/div nil
@@ -111,9 +111,21 @@
     om/IDidMount
     (did-mount [_]
       (set! (.-onkeydown js/document.body)
-            (fn [e] (when (= "Enter" (.-key e))
-                      (om/update! data [:owner] "joe")
-                      (connect "joe")))))))
+            (fn [e] (let [k (.-key e)
+                          o (om/get-state owner :owner)]
+                      (cond
+                        (and (= "Enter" k)
+                             (not (= "" o)))
+                        (do
+                          (om/update! data [:owner] o)
+                          (connect o))
+                        (= "Backspace" k)
+                        (when-not (= "" o)
+                          (om/set-state! owner [:owner] (subs o 0 (dec (count o)))))
+                        (< 100 (count o))
+                        (print "owner too long")
+                        (re-matches #"[a-z\-]" k)
+                        (om/set-state! owner [:owner] (str o k)))))))))
 
 (om/root
  (fn [data owner]
