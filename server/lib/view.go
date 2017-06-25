@@ -3,6 +3,7 @@ package colony
 type ObjectView struct {
 	Direction Direction
 	Color     string
+	Mine      bool
 }
 
 type PointView struct {
@@ -34,7 +35,7 @@ func (w *World) View(owner Owner) *WorldView {
 			}
 			object, exists := w.objects[point]
 			if exists {
-				pv.Object = object.View()
+				pv.Object = object.View(owner)
 			}
 			_, present := phermones[point]
 			if present {

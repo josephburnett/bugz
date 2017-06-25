@@ -25,7 +25,7 @@ type Object interface {
 	Owner() Owner
 	Point() Point
 	Dead() bool
-	View() *ObjectView
+	View(Owner) *ObjectView
 }
 
 type AnimateObject interface {

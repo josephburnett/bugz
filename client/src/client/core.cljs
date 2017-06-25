@@ -18,7 +18,8 @@
 (def color-dirt "#d3b383")
 (def color-colony "#3d2501")
 (def color-phermone "#ce9c52")
-(def color-ant "#b50c03")
+(def color-my-ant "#b50c03")
+(def color-their-ant "#000")
 
 (defn show-text [text]
   (dom/div nil (dom/h2 nil text)))
@@ -58,19 +59,19 @@
                                :background (cond
                                              (get cell "Colony") color-colony
                                              (get cell "Phermone") color-phermone
-                                             :default color-dirt)
-                               :color color-ant}}
+                                             :default color-dirt)}}
               (cond
                 (nil? (get cell "Object")) (dom/div nil "")
-                :default (condp = (get-in cell ["Object" "Direction"])
-                           [1,0] (dom/div #js {:className "right"} ant)
-                           [1,-1] (dom/div #js {:className "down-right"} ant)
-                           [0,-1] (dom/div #js {:className "down"} ant)
-                           [-1,-1] (dom/div #js {:className "down-left"} ant)
-                           [-1,0] (dom/div #js {:className "left"} ant)
-                           [-1,1] (dom/div #js {:className "up-left"} ant)
-                           [0,1] (dom/div #js {:className "up"} ant)
-                           [1,1] (dom/div #js {:className "up-right"} ant)))))))
+                :default (let [style {:style {:color (if (get-in cell ["Object" "Mine"]) color-my-ant color-their-ant)}}]
+                           (condp = (get-in cell ["Object" "Direction"])
+                             [1,0] (dom/div (clj->js (merge style {:className "right"})) ant)
+                             [1,-1] (dom/div (clj->js (merge style {:className "down-right"})) ant)
+                             [0,-1] (dom/div (clj->js (merge style {:className "down"})) ant)
+                             [-1,-1] (dom/div (clj->js (merge style {:className "down-left"})) ant)
+                             [-1,0] (dom/div (clj->js (merge style {:className "left"})) ant)
+                             [-1,1] (dom/div (clj->js (merge style {:className "up-left"})) ant)
+                             [0,1] (dom/div (clj->js (merge style {:className "up"})) ant)
+                             [1,1] (dom/div (clj->js (merge style {:className "up-right"})) ant))))))))
 
 (defn row-view [row _]
   (reify om/IRender

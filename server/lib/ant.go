@@ -121,8 +121,9 @@ func (a *Ant) Dead() bool {
 	return a.strength <= 0
 }
 
-func (a *Ant) View() *ObjectView {
+func (a *Ant) View(o Owner) *ObjectView {
 	return &ObjectView{
 		Direction: a.direction,
+		Mine:      o == a.owner,
 	}
 }
