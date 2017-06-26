@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"time"
 )
 
 type EventType string
@@ -71,6 +72,7 @@ func NewEventLoop(w *World) (e *EventLoop) {
 		for {
 			event, ok := <-e.C
 			if !ok {
+				log.Println("[ERROR] event loop channel closed")
 				return
 			}
 			switch event := event.(type) {
@@ -100,6 +102,18 @@ func NewEventLoop(w *World) (e *EventLoop) {
 					delete(p, event.Point)
 				}
 			}
+		}
+	}()
+	go func() {
+		t := time.NewTicker(500 * time.Millisecond)
+		defer t.Stop()
+		for {
+			_, ok := <-t.C
+			if !ok {
+				log.Println("[ERROR] time ticker channel closed")
+				return
+			}
+			e.C <- &TimeTickEvent{}
 		}
 	}()
 	return
