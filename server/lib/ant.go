@@ -100,12 +100,15 @@ func (a *Ant) Attack(o Object) bool {
 	switch ao := o.(type) {
 	default:
 		return false
-	// TODO: kill a colony
 	case AnimateObject:
 		defense := ao.Strength()
-		ao.TakeDamage(a.strength)
-		a.TakeDamage(defense)
-		return a.Dead()
+		attack := a.strength
+		if defense > attack {
+			a.TakeDamage(defense)
+		} else {
+			ao.TakeDamage(attack)
+		}
+		return !a.Dead()
 	}
 }
 
