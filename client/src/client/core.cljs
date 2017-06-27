@@ -20,6 +20,8 @@
 (def color-phermone "#ce9c52")
 (def color-my-ant "#b50c03")
 (def color-their-ant "#000")
+(def color-friend "#1f6d1f")
+(def color-enemy "#9e1914")
 
 (defn show-text [text]
   (dom/div nil (dom/h2 nil text)))
@@ -78,6 +80,21 @@
     (render [_]
       (apply dom/tr nil (om/build-all cell-view row)))))
 
+(defn friend-view [friends _]
+  (reify
+    om/IRender
+    (render [_]
+      (if (= 0 (count friends))
+        (dom/span nil "no other colonies")
+        (apply dom/ul nil
+               (map (fn [f]
+                      (let [is-friend (get friends f)]
+                        (dom/li #js {:onClick #(go (>! server-channel {"Type" "ui-friend"
+                                                                       "Event" {"Friend" f
+                                                                                "State" (not is-friend)}}))}
+                                (dom/span #js {:style #js {:color (if is-friend color-friend color-enemy)}} f))))
+                    (keys friends)))))))
+
 (defn world-view [world _]
   (reify
     om/IRender
@@ -85,7 +102,9 @@
       (if-not (contains? world "Points")
         (show-text "Loading...")
         (let [rows (get world "Points")]
-          (dom/div nil (dom/table nil (apply dom/tbody nil (om/build-all row-view rows)))))))
+          (dom/div nil
+                   (dom/table nil (apply dom/tbody nil (om/build-all row-view rows)))
+                   (om/build friend-view (get world "Friends"))))))
     om/IDidMount
     (did-mount [_]
       (set! (.-onkeydown js/document.body)

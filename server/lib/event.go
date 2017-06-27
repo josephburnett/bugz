@@ -10,13 +10,12 @@ import (
 type EventType string
 
 const (
-	E_UI_PRODUCE   = EventType("ui-produce")
-	E_UI_PHERMONE  = EventType("ui-phermone")
-	E_UI_CONNECT   = EventType("ui-connect")
-	E_UI_FRIEND    = EventType("ui-friend")
-	E_TIME_TICK    = EventType("time-tick")
-	E_VIEW_UPDATE  = EventType("view-update")
-	E_OWNER_UPDATE = EventType("owner-update")
+	E_UI_PRODUCE  = EventType("ui-produce")
+	E_UI_PHERMONE = EventType("ui-phermone")
+	E_UI_CONNECT  = EventType("ui-connect")
+	E_UI_FRIEND   = EventType("ui-friend")
+	E_TIME_TICK   = EventType("time-tick")
+	E_VIEW_UPDATE = EventType("view-update")
 )
 
 type Event interface {
@@ -60,18 +59,6 @@ func (e *EventLoop) BroadcastView() {
 		view := e.World.View(o)
 		for _, viewer := range viewers {
 			viewer <- view
-		}
-	}
-}
-
-func (e *EventLoop) BroadcastFriends() {
-	for o, viewers := range e.viewers {
-		if _, exists := e.World.owners[o]; !exists {
-			return
-		}
-		friends := e.World.FriendsView(o)
-		for _, viewer := range viewers {
-			viewer <- friends
 		}
 	}
 }
@@ -121,7 +108,6 @@ func NewEventLoop(w *World) (e *EventLoop) {
 				} else {
 					w.Unfriend(event.Owner, event.Friend)
 				}
-				e.BroadcastFriends()
 			}
 		}
 	}()
@@ -178,13 +164,6 @@ type ViewUpdateEvent struct {
 }
 
 func (e *ViewUpdateEvent) eventType() EventType { return E_VIEW_UPDATE }
-
-type OwnerUpdateEvent struct {
-	Owner       Owner
-	FriendsView *FriendsView
-}
-
-func (e *OwnerUpdateEvent) eventType() EventType { return E_OWNER_UPDATE_EVENT }
 
 func UnmarshalEvent(t EventType, event map[string]interface{}) (Event, error) {
 	switch t {
@@ -246,7 +225,7 @@ func UnmarshalEvent(t EventType, event map[string]interface{}) (Event, error) {
 			Owner:  Owner(owner),
 			Friend: Owner(friend),
 			State:  state,
-		}
+		}, nil
 	default:
 		return nil, errors.New("Unknown message type from client")
 	}

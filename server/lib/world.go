@@ -30,7 +30,7 @@ type Object interface {
 }
 
 type AnimateObject interface {
-	Move(Objects, Phermones) Point
+	Move(Objects, Phermones, map[Owner]bool) Point
 	Attack(Object) bool
 	TakeDamage(int)
 	Strength() int
@@ -92,13 +92,13 @@ func (w *World) Friend(a Owner, b Owner) {
 		friendsA = make(map[Owner]bool)
 		w.friends[a] = friendsA
 	}
-	friendsA = true
+	friendsA[b] = true
 	friendsB, ok := w.friends[b]
 	if !ok {
 		friendsB = make(map[Owner]bool)
 		w.friends[b] = friendsB
 	}
-	friendsB = true
+	friendsB[a] = true
 }
 
 func (w *World) Unfriend(a Owner, b Owner) {
@@ -126,7 +126,7 @@ func (w *World) Advance() {
 		}
 		if ao, ok := o.(AnimateObject); ok {
 			fromPoint := o.Point()
-			toPoint := ao.Move(w.objects, w.phermones[o.Owner()])
+			toPoint := ao.Move(w.objects, w.phermones[o.Owner()], w.friends[o.Owner()])
 			if fromPoint.Equals(toPoint) {
 				continue
 			}

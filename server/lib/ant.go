@@ -23,14 +23,20 @@ func (a *Ant) Point() Point {
 	return a.point
 }
 
-func (a *Ant) Move(o Objects, p Phermones) Point {
+func (a *Ant) Move(o Objects, p Phermones, friends map[Owner]bool) Point {
 	possible := func(d Direction) bool {
 		newPoint := a.point.Plus(d)
 		object, exists := o[newPoint]
-		if !exists || object.Owner() != a.owner {
+		if !exists {
 			return true
 		}
-		return false
+		if object.Owner() == a.owner {
+			return false
+		}
+		if friend, ok := friends[object.Owner()]; ok && friend {
+			return false
+		}
+		return true // attack
 	}
 	options := make([]Direction, 0, 8)
 	move := func() Point {
