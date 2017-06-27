@@ -13,9 +13,10 @@ const (
 	E_UI_PRODUCE   = EventType("ui-produce")
 	E_UI_PHERMONE  = EventType("ui-phermone")
 	E_UI_CONNECT   = EventType("ui-connect")
+	E_UI_FRIEND    = EventType("ui-friend")
 	E_TIME_TICK    = EventType("time-tick")
-	E_VIEW_REQUEST = EventType("view-request")
 	E_VIEW_UPDATE  = EventType("view-update")
+	E_OWNER_UPDATE = EventType("owner-update")
 )
 
 type Event interface {
@@ -52,12 +53,25 @@ func (e *EventLoop) Unview(o Owner, c chan *WorldView) {
 func (e *EventLoop) BroadcastView() {
 	for o, viewers := range e.viewers {
 		if _, exists := e.World.owners[o]; !exists {
+			// TODO: move this to a viewer cleanup routine
 			delete(e.viewers, o)
 			return
 		}
 		view := e.World.View(o)
 		for _, viewer := range viewers {
 			viewer <- view
+		}
+	}
+}
+
+func (e *EventLoop) BroadcastFriends() {
+	for o, viewers := range e.viewers {
+		if _, exists := e.World.owners[o]; !exists {
+			return
+		}
+		friends := e.World.FriendsView(o)
+		for _, viewer := range viewers {
+			viewer <- friends
 		}
 	}
 }
@@ -101,6 +115,13 @@ func NewEventLoop(w *World) (e *EventLoop) {
 				} else {
 					delete(p, event.Point)
 				}
+			case *UiFriendEvent:
+				if event.State {
+					w.Friend(event.Owner, event.Friend)
+				} else {
+					w.Unfriend(event.Owner, event.Friend)
+				}
+				e.BroadcastFriends()
 			}
 		}
 	}()
@@ -118,10 +139,6 @@ func NewEventLoop(w *World) (e *EventLoop) {
 	}()
 	return
 }
-
-type TimeTickEvent struct{}
-
-func (e *TimeTickEvent) eventType() EventType { return E_TIME_TICK }
 
 type UiProduceEvent struct {
 	Owner Owner
@@ -143,12 +160,31 @@ type UiConnectEvent struct {
 
 func (e *UiConnectEvent) eventType() EventType { return E_UI_CONNECT }
 
+type UiFriendEvent struct {
+	Owner  Owner
+	Friend Owner
+	State  bool
+}
+
+func (e *UiFriendEvent) eventType() EventType { return E_UI_FRIEND }
+
+type TimeTickEvent struct{}
+
+func (e *TimeTickEvent) eventType() EventType { return E_TIME_TICK }
+
 type ViewUpdateEvent struct {
 	Owner     Owner
 	WorldView *WorldView
 }
 
 func (e *ViewUpdateEvent) eventType() EventType { return E_VIEW_UPDATE }
+
+type OwnerUpdateEvent struct {
+	Owner       Owner
+	FriendsView *FriendsView
+}
+
+func (e *OwnerUpdateEvent) eventType() EventType { return E_OWNER_UPDATE_EVENT }
 
 func UnmarshalEvent(t EventType, event map[string]interface{}) (Event, error) {
 	switch t {
@@ -193,6 +229,24 @@ func UnmarshalEvent(t EventType, event map[string]interface{}) (Event, error) {
 			Point: Point([2]int{int(x), int(y)}),
 			State: state,
 		}, nil
+	case E_UI_FRIEND:
+		owner, ok := event["Owner"].(string)
+		if !ok {
+			return nil, errors.New("Friend event from client does not have owner")
+		}
+		friend, ok := event["Friend"].(string)
+		if !ok {
+			return nil, errors.New("Friend event from client does not have friend")
+		}
+		state, ok := event["State"].(bool)
+		if !ok {
+			return nil, errors.New("Friend event from client does not have state")
+		}
+		return &UiFriendEvent{
+			Owner:  Owner(owner),
+			Friend: Owner(friend),
+			State:  state,
+		}
 	default:
 		return nil, errors.New("Unknown message type from client")
 	}

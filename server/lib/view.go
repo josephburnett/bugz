@@ -17,6 +17,10 @@ type WorldView struct {
 	Points [][]*PointView
 }
 
+type FriendsView struct {
+	Friends map[Owner]bool
+}
+
 func (w *World) View(owner Owner) *WorldView {
 	phermones := w.phermones[owner]
 	center := w.owners[owner].Point()
@@ -50,4 +54,22 @@ func (w *World) View(owner Owner) *WorldView {
 		wv.Points = append(wv.Points, row)
 	}
 	return wv
+}
+
+func (w *World) FriendsView(owner Owner) *FriendsView {
+	fv := &FriendsView{
+		Friends: make(map[Owner]bool),
+	}
+	friends, ok := w.friends[owner]
+	if !ok {
+		friends = make(map[Owner]bool)
+	}
+	for o := range w.owners {
+		if _, friend := friends[o]; friend {
+			fv.Friends[o] = true
+		} else {
+			fv.Friends[o] = false
+		}
+	}
+	return fv
 }

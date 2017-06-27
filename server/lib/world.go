@@ -42,6 +42,7 @@ type World struct {
 	objects   Objects
 	colonies  map[Point]*Colony
 	clients   Clients
+	friends   map[Owner]map[Owner]bool
 }
 
 func NewWorld() *World {
@@ -50,6 +51,7 @@ func NewWorld() *World {
 		phermones: make(map[Owner]Phermones),
 		objects:   make(Objects),
 		colonies:  make(map[Point]*Colony),
+		friends:   make(map[Owner]map[Owner]bool),
 	}
 }
 
@@ -82,6 +84,32 @@ func (w *World) KillColony(o Owner) {
 	delete(w.owners, o)
 	delete(w.phermones, o)
 	delete(w.colonies, c.Point())
+}
+
+func (w *World) Friend(a Owner, b Owner) {
+	friendsA, ok := w.friends[a]
+	if !ok {
+		friendsA = make(map[Owner]bool)
+		w.friends[a] = friendsA
+	}
+	friendsA = true
+	friendsB, ok := w.friends[b]
+	if !ok {
+		friendsB = make(map[Owner]bool)
+		w.friends[b] = friendsB
+	}
+	friendsB = true
+}
+
+func (w *World) Unfriend(a Owner, b Owner) {
+	friendsA, ok := w.friends[a]
+	if ok {
+		delete(friendsA, b)
+	}
+	friendsB, ok := w.friends[b]
+	if ok {
+		delete(friendsB, a)
+	}
 }
 
 func (w *World) Advance() {
