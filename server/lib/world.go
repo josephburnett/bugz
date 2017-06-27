@@ -99,15 +99,6 @@ func (w *World) Advance() {
 		if ao, ok := o.(AnimateObject); ok {
 			fromPoint := o.Point()
 			toPoint := ao.Move(w.objects, w.phermones[o.Owner()])
-			move := func() {
-				w.objects[toPoint] = o
-				if colony, present := w.colonies[toPoint]; present {
-					if colony.Owner() != o.Owner() {
-						w.KillColony(colony.Owner())
-						log.Println(o.Owner() + " kills the colony of " + colony.Owner())
-					}
-				}
-			}
 			if fromPoint.Equals(toPoint) {
 				continue
 			}
@@ -116,13 +107,13 @@ func (w *World) Advance() {
 				win := ao.Attack(target)
 				if win {
 					log.Println(o.Owner() + " kills an ant of " + target.Owner())
-					move()
+					w.objects[toPoint] = o
 				} else {
 					log.Println(o.Owner() + " ant is killed by " + target.Owner())
 				}
 				delete(w.objects, fromPoint)
 			} else {
-				move()
+				w.objects[toPoint] = o
 				delete(w.objects, fromPoint)
 			}
 		}
