@@ -22,23 +22,6 @@ func NewClients(e *EventLoop) *Clients {
 	}
 }
 
-func (c *Clients) BroadcastAll(msg *Message) {
-	for _, clients := range c.clients {
-		for _, client := range clients {
-			client <- msg
-		}
-	}
-}
-
-func (c *Clients) BroadcastOwner(o Owner, msg *Message) {
-	clients, exist := c.clients[o]
-	if exist {
-		for _, client := range clients {
-			client <- msg
-		}
-	}
-}
-
 func (c *Clients) Connect(o Owner, ch chan *Message) {
 	clients, exists := c.clients[o]
 	if !exists {
