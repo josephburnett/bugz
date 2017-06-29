@@ -25,41 +25,28 @@ type Event interface {
 type EventLoop struct {
 	C       chan Event
 	World   *World
-	viewers map[Owner][]chan *WorldView
+	viewers map[Owner]chan *WorldView
 }
 
 func (e *EventLoop) View(o Owner, c chan *WorldView) {
-	viewers, ok := e.viewers[o]
-	if !ok {
-		viewers = make([]chan *WorldView, 0)
-	}
-	e.viewers[o] = append(viewers, c)
+	e.viewers[o] = c
 }
 
-func (e *EventLoop) Unview(o Owner, c chan *WorldView) {
-	viewers, ok := e.viewers[o]
-	if !ok {
-		return
+func (e *EventLoop) Unview(o Owner) {
+	if c, ok := e.viewers[o]; ok {
+		close(c)
 	}
-	for i, ch := range viewers {
-		if ch == c {
-			e.viewers[o] = append(viewers[:i], viewers[i+1:]...)
-			return
-		}
-	}
+	delete(e.viewers, o)
 }
 
 func (e *EventLoop) BroadcastView() {
-	for o, viewers := range e.viewers {
+	for o, viewer := range e.viewers {
 		if _, exists := e.World.owners[o]; !exists {
 			// TODO: move this to a viewer cleanup routine
 			delete(e.viewers, o)
 			return
 		}
-		view := e.World.View(o)
-		for _, viewer := range viewers {
-			viewer <- view
-		}
+		viewer <- e.World.View(o)
 	}
 }
 
@@ -67,7 +54,7 @@ func NewEventLoop(w *World) (e *EventLoop) {
 	e = &EventLoop{
 		C:       make(chan Event, 100),
 		World:   w,
-		viewers: make(map[Owner][]chan *WorldView),
+		viewers: make(map[Owner]chan *WorldView),
 	}
 	go func() {
 		for {
@@ -112,7 +99,7 @@ func NewEventLoop(w *World) (e *EventLoop) {
 		}
 	}()
 	go func() {
-		t := time.NewTicker(500 * time.Millisecond)
+		t := time.NewTicker(1000 * time.Millisecond)
 		defer t.Stop()
 		for {
 			_, ok := <-t.C

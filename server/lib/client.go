@@ -33,7 +33,10 @@ func (c *Clients) Connect(o Owner, ch chan *Message) {
 		ch := make(chan *WorldView, 10)
 		go func() {
 			for {
-				view := <-ch
+				view, ok := <-ch
+				if !ok {
+					return
+				}
 				event := &ViewUpdateEvent{
 					Owner:     o,
 					WorldView: view,
@@ -60,7 +63,7 @@ func (c *Clients) Disconnect(o Owner, ch chan *Message) {
 		if client == ch {
 			c.clients[o] = append(clients[:i], clients[i+1:]...)
 			if len(c.clients[o]) == 0 {
-				c.eventLoop.Unview(o, c.viewingOwners[o])
+				c.eventLoop.Unview(o)
 			}
 			return
 		}
