@@ -87,6 +87,11 @@ func (c *Clients) Disconnect(o Owner, ch chan *Message) {
 func (c *Clients) Serve(addr string) {
 	go func() {
 		ClientWebsocket := func(w http.ResponseWriter, r *http.Request) {
+			defer func() {
+				if r := recover(); r != nil {
+					log.Println("Recovered from panic in websocker handler: ", r)
+				}
+			}()
 			owner := r.URL.Path[len("/ws/owner/"):]
 			if owner == "" {
 				http.Error(w, "Owner is a required parameter", http.StatusBadRequest)
