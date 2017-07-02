@@ -14,7 +14,7 @@ func (c *Colony) Point() Point {
 	return c.point
 }
 
-func (c *Colony) Produce(o Objects) (*Ant, bool) {
+func (c *Colony) Produce(o map[Point]Object) (*Ant, bool) {
 	if c.produce {
 		_, obstructed := o[c.Point()]
 		if !obstructed {

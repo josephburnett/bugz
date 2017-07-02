@@ -9,7 +9,7 @@ type Owner string
 type Point [2]int
 type Direction [2]int
 type Phermones map[Point]bool
-type Objects map[Point]Object
+type Friends map[Owner]bool
 
 func (p Point) Plus(d Direction) Point {
 	return Point{p[0] + d[0], p[1] + d[1]}
@@ -30,7 +30,7 @@ type Object interface {
 }
 
 type AnimateObject interface {
-	Move(Objects, Phermones, map[Owner]bool) Point
+	Move(map[Point]Object, Phermones, map[Owner]bool) Point
 	Attack(Object) bool
 	TakeDamage(int)
 	Strength() int
@@ -39,19 +39,18 @@ type AnimateObject interface {
 type World struct {
 	owners    map[Owner]*Colony
 	phermones map[Owner]Phermones
-	objects   Objects
+	objects   map[Point]Object
 	colonies  map[Point]*Colony
-	clients   Clients
-	friends   map[Owner]map[Owner]bool
+	friends   map[Owner]Friends
 }
 
 func NewWorld() *World {
 	return &World{
 		owners:    make(map[Owner]*Colony),
 		phermones: make(map[Owner]Phermones),
-		objects:   make(Objects),
+		objects:   make(map[Point]Object),
 		colonies:  make(map[Point]*Colony),
-		friends:   make(map[Owner]map[Owner]bool),
+		friends:   make(map[Owner]Friends),
 	}
 }
 
@@ -89,13 +88,13 @@ func (w *World) KillColony(o Owner) {
 func (w *World) Friend(a Owner, b Owner) {
 	friendsA, ok := w.friends[a]
 	if !ok {
-		friendsA = make(map[Owner]bool)
+		friendsA = make(Friends)
 		w.friends[a] = friendsA
 	}
 	friendsA[b] = true
 	friendsB, ok := w.friends[b]
 	if !ok {
-		friendsB = make(map[Owner]bool)
+		friendsB = make(Friends)
 		w.friends[b] = friendsB
 	}
 	friendsB[a] = true

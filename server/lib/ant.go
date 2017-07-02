@@ -23,7 +23,7 @@ func (a *Ant) Point() Point {
 	return a.point
 }
 
-func (a *Ant) Move(o Objects, p Phermones, friends map[Owner]bool) Point {
+func (a *Ant) Move(o map[Point]Object, p Phermones, friends map[Owner]bool) Point {
 	possible := func(d Direction) bool {
 		newPoint := a.point.Plus(d)
 		object, exists := o[newPoint]
