@@ -30,9 +30,8 @@ func (s *Soil) Dead() bool {
 }
 
 func (s *Soil) Produce() (Object, bool) {
-	if s.richness == 3 && s.time == 10 {
+	if s.richness == 3 && (s.time%10 == 0) {
 		log.Println("soild produces")
-		s.richness = 1
 		return &Fruit{
 			freshness: 3,
 			time:      0,
