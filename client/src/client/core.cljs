@@ -15,16 +15,19 @@
 (defonce client-channel (chan))
 
 (def ant "⚈")
+(def fruit "♥")
+(def phermone "•")
 (def color-dirt {0 "#d3b383"
                  1 "#c6a471"
-                 2 "#c49e66"
-                 3 "#c19553"})
+                 2 "#c19553"
+                 3 "#579657"})
 (def color-colony "#3d2501")
-(def color-phermone "#ce9c52")
+(def color-phermone "#505ffc")
 (def color-my-ant "#b50c03")
 (def color-their-ant "#000")
 (def color-friend "#1f6d1f")
 (def color-enemy "#9e1914")
+(def color-fruit "#0b8c0b")
 
 (defn show-text [text]
   (dom/div nil (dom/h2 nil text)))
@@ -52,6 +55,29 @@
                   (>! client-channel message)
                   (recur))))))))))
 
+(defn show-ant [cell]
+  (let [style {:style {:color (if (get-in cell ["Object" "Mine"]) color-my-ant color-their-ant)
+                       :position "absolute"
+                       :top "0px"
+                       :right "5px"}}]
+    (condp = (get-in cell ["Object" "Direction"])
+      [1,0] (dom/div (clj->js (merge style {:className "right"})) ant)
+      [1,-1] (dom/div (clj->js (merge style {:className "down-right"})) ant)
+      [0,-1] (dom/div (clj->js (merge style {:className "down"})) ant)
+      [-1,-1] (dom/div (clj->js (merge style {:className "down-left"})) ant)
+      [-1,0] (dom/div (clj->js (merge style {:className "left"})) ant)
+      [-1,1] (dom/div (clj->js (merge style {:className "up-left"})) ant)
+      [0,1] (dom/div (clj->js (merge style {:className "up"})) ant)
+      [1,1] (dom/div (clj->js (merge style {:className "up-right"})) ant))))
+
+(defn show-fruit [cell]
+  (dom/div #js {:style #js {:fontSize "25px"
+                            :color color-fruit
+                            :position "absolute"
+                            :top "-5px"
+                            :right "3px"}}
+           fruit))
+
 (defn cell-view [cell _]
   (reify om/IRender
     (render [_]
@@ -61,22 +87,18 @@
                                                        "Event" {"Point" (get cell "Point")
                                                                 "State" (not (get cell "Phermone"))}})))
                    :style #js {:width "20px" :height "20px"
+                               :textAlign "center"
+                               :position "relative"
                                :background (cond
                                              (get cell "Colony") color-colony
-                                             (get cell "Phermone") color-phermone
                                              :default (get color-dirt (get cell "Soil")))}}
-              (cond
-                (nil? (get cell "Object")) (dom/div nil "")
-                :default (let [style {:style {:color (if (get-in cell ["Object" "Mine"]) color-my-ant color-their-ant)}}]
-                           (condp = (get-in cell ["Object" "Direction"])
-                             [1,0] (dom/div (clj->js (merge style {:className "right"})) ant)
-                             [1,-1] (dom/div (clj->js (merge style {:className "down-right"})) ant)
-                             [0,-1] (dom/div (clj->js (merge style {:className "down"})) ant)
-                             [-1,-1] (dom/div (clj->js (merge style {:className "down-left"})) ant)
-                             [-1,0] (dom/div (clj->js (merge style {:className "left"})) ant)
-                             [-1,1] (dom/div (clj->js (merge style {:className "up-left"})) ant)
-                             [0,1] (dom/div (clj->js (merge style {:className "up"})) ant)
-                             [1,1] (dom/div (clj->js (merge style {:className "up-right"})) ant))))))))
+              (when (get cell "Phermone") (dom/div #js {:style #js {:position "relative"
+                                                                    :color color-phermone
+                                                                    :zIndex "100"}} phermone))
+              (when-not (nil? (get cell "Object"))
+                (if (= "ant" (get-in cell ["Object" "Type"]))
+                  (show-ant cell)
+                  (show-fruit cell)))))))
 
 (defn row-view [row _]
   (reify om/IRender
