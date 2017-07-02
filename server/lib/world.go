@@ -62,8 +62,8 @@ func (w *World) NewColony(o Owner) {
 	var p Point
 	for {
 		p = Point{
-			rand.Intn(40) - 20,
-			rand.Intn(40) - 20,
+			rand.Intn(20),
+			rand.Intn(20),
 		}
 		if _, occupied := w.colonies[p]; !occupied {
 			break
