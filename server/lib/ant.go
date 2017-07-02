@@ -1,5 +1,7 @@
 package colony
 
+import "log"
+
 var _ Object = &Ant{}
 var _ AnimateObject = &Ant{}
 
@@ -125,6 +127,9 @@ func (a *Ant) Attack(o Object) bool {
 			ao.TakeDamage(attack)
 		}
 		return !a.Dead()
+	case Object:
+		log.Println(a.Owner(), a.Type(), "eats", o.Type())
+		return true
 	}
 }
 
