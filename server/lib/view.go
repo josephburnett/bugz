@@ -1,6 +1,7 @@
 package colony
 
 type ObjectView struct {
+	Type      string
 	Direction Direction
 	Color     string
 	Mine      bool
@@ -9,6 +10,7 @@ type ObjectView struct {
 type PointView struct {
 	Point    Point
 	Object   *ObjectView
+	Soil     int
 	Phermone bool
 	Colony   bool
 }
@@ -35,16 +37,16 @@ func (w *World) View(owner Owner) *WorldView {
 			pv := &PointView{
 				Point: point,
 			}
-			object, exists := w.objects[point]
-			if exists {
+			if object, exists := w.objects[point]; exists {
 				pv.Object = object.View(owner)
 			}
-			_, present := phermones[point]
-			if present {
+			if soil, exists := w.soil[point]; exists {
+				pv.Soil = soil.richness
+			}
+			if _, present := phermones[point]; present {
 				pv.Phermone = true
 			}
-			_, exists = w.colonies[point]
-			if exists {
+			if _, exists := w.colonies[point]; exists {
 				pv.Colony = true
 			}
 			row = append(row, pv)

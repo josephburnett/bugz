@@ -24,7 +24,9 @@ func (p1 Point) Equals(p2 Point) bool {
 
 type Object interface {
 	Owner() Owner
+	Type() string
 	Point() Point
+	Tick()
 	Dead() bool
 	View(Owner) *ObjectView
 }
@@ -38,19 +40,21 @@ type AnimateObject interface {
 
 type World struct {
 	owners    map[Owner]*Colony
+	friends   map[Owner]Friends
 	phermones map[Owner]Phermones
 	objects   map[Point]Object
 	colonies  map[Point]*Colony
-	friends   map[Owner]Friends
+	soil      map[Point]*Soil
 }
 
 func NewWorld() *World {
 	return &World{
 		owners:    make(map[Owner]*Colony),
+		friends:   make(map[Owner]Friends),
 		phermones: make(map[Owner]Phermones),
 		objects:   make(map[Point]Object),
 		colonies:  make(map[Point]*Colony),
-		friends:   make(map[Owner]Friends),
+		soil:      make(map[Point]*Soil),
 	}
 }
 
@@ -112,31 +116,49 @@ func (w *World) Unfriend(a Owner, b Owner) {
 }
 
 func (w *World) Advance() {
-	objects := make([]Object, 0, len(w.objects))
-	for _, o := range w.objects {
-		objects = append(objects, o)
-	}
-	// Move objects
-	perm := rand.Perm(len(objects))
-	for _, i := range perm {
-		o := objects[i]
+	livingObjects := make([]Object, 0, len(w.objects))
+	// Age objects
+	for point, o := range w.objects {
+		o.Tick()
 		if o.Dead() {
+			log.Println(o.Owner(), o.Type(), "dies of natural causes")
+			if _, enriched := w.soil[point]; !enriched {
+				w.soil[point] = &Soil{}
+			}
+			w.soil[point].Enrich()
+			delete(w.objects, point)
+		} else {
+			livingObjects = append(livingObjects, o)
+		}
+	}
+	// Age soil
+	for _, soil := range w.soil {
+		soil.Tick()
+	}
+	// Visit objects in random order
+	perm := rand.Perm(len(livingObjects))
+	// Move objects
+	for _, i := range perm {
+		o := livingObjects[i]
+		if o.Dead() {
+			// Killed by another moving object
 			continue
 		}
 		if ao, ok := o.(AnimateObject); ok {
 			fromPoint := o.Point()
 			toPoint := ao.Move(w.objects, w.phermones[o.Owner()], w.friends[o.Owner()])
 			if fromPoint.Equals(toPoint) {
+				// No move
 				continue
 			}
 			target, occupied := w.objects[toPoint]
 			if occupied {
 				win := ao.Attack(target)
 				if win {
-					log.Println(o.Owner() + " kills an ant of " + target.Owner())
+					log.Println(o.Owner(), " ", o.Type(), " kills ", target.Owner(), " ", target.Type())
 					w.objects[toPoint] = o
 				} else {
-					log.Println(o.Owner() + " ant is killed by " + target.Owner())
+					log.Println(o.Owner(), " ", o.Type(), " is killed by ", target.Owner(), " ", target.Type())
 				}
 				delete(w.objects, fromPoint)
 			} else {
@@ -152,10 +174,22 @@ func (w *World) Advance() {
 			w.objects[ant.Point()] = ant
 		}
 	}
-	// Remove the dead
+	for point, s := range w.soil {
+		if object, produced := s.Produce(); produced {
+			if _, occupied := w.objects[point]; !occupied {
+				w.objects[point] = object
+			}
+		}
+	}
+	// Remove the dead stuff
 	for _, o := range w.objects {
 		if o.Dead() {
 			delete(w.objects, o.Point())
+		}
+	}
+	for point, s := range w.soil {
+		if s.Dead() {
+			delete(w.soil, point)
 		}
 	}
 }

@@ -19,8 +19,21 @@ func (a *Ant) Owner() Owner {
 	return a.owner
 }
 
+func (a *Ant) Type() string {
+	return "ant"
+}
+
 func (a *Ant) Point() Point {
 	return a.point
+}
+
+func (a *Ant) Tick() {
+	// Advance behavior cycle
+	a.cycle = (a.cycle + 1) % CYCLE
+	a.endurance = a.endurance - 1
+	if a.endurance == 0 {
+		a.strength = 0
+	}
 }
 
 func (a *Ant) Move(o map[Point]Object, p Phermones, friends map[Owner]bool) Point {
@@ -43,7 +56,6 @@ func (a *Ant) Move(o map[Point]Object, p Phermones, friends map[Owner]bool) Poin
 		d := RandomDirection(options)
 		a.point = a.point.Plus(d)
 		a.direction = d
-		a.endurance = a.endurance - 1
 		return a.point
 	}
 	// Die
@@ -51,8 +63,6 @@ func (a *Ant) Move(o map[Point]Object, p Phermones, friends map[Owner]bool) Poin
 		a.strength = 0
 		return a.point
 	}
-	// Advance behavior cycle
-	a.cycle = (a.cycle + 1) % CYCLE
 	// Follow a phermone, in front
 	for _, d := range a.direction.InFront() {
 		target := a.point.Plus(d)
@@ -132,6 +142,7 @@ func (a *Ant) Dead() bool {
 
 func (a *Ant) View(o Owner) *ObjectView {
 	return &ObjectView{
+		Type:      a.Type(),
 		Direction: a.direction,
 		Mine:      o == a.owner,
 	}

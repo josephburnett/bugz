@@ -15,7 +15,10 @@
 (defonce client-channel (chan))
 
 (def ant "⚈")
-(def color-dirt "#d3b383")
+(def color-dirt {0 "#d3b383"
+                 1 "#c6a471"
+                 2 "#c49e66"
+                 3 "#c19553"})
 (def color-colony "#3d2501")
 (def color-phermone "#ce9c52")
 (def color-my-ant "#b50c03")
@@ -61,7 +64,7 @@
                                :background (cond
                                              (get cell "Colony") color-colony
                                              (get cell "Phermone") color-phermone
-                                             :default color-dirt)}}
+                                             :default (get color-dirt (get cell "Soil")))}}
               (cond
                 (nil? (get cell "Object")) (dom/div nil "")
                 :default (let [style {:style {:color (if (get-in cell ["Object" "Mine"]) color-my-ant color-their-ant)}}]
