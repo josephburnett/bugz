@@ -116,6 +116,10 @@ func (w *World) Unfriend(a Owner, b Owner) {
 }
 
 func (w *World) Advance() {
+	// Fill colony buckets
+	for _, colony := range w.owners {
+		colony.Tick()
+	}
 	livingObjects := make([]Object, 0, len(w.objects))
 	// Age objects
 	for point, o := range w.objects {

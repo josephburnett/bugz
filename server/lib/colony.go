@@ -4,6 +4,7 @@ type Colony struct {
 	owner   Owner
 	point   Point
 	produce bool
+	bucket  int
 }
 
 func (c *Colony) Owner() Owner {
@@ -14,11 +15,20 @@ func (c *Colony) Point() Point {
 	return c.point
 }
 
+func (c *Colony) Tick() {
+	if c.bucket < 50 {
+		c.bucket = c.bucket + 1
+	}
+}
+
 func (c *Colony) Produce(o map[Point]Object) (*Ant, bool) {
 	if c.produce {
 		_, obstructed := o[c.Point()]
-		if !obstructed {
-			c.produce = false
+		if !obstructed && c.bucket > 0 {
+			c.bucket = c.bucket - 2
+			if c.bucket == 0 {
+				c.produce = false
+			}
 			return &Ant{
 				owner:     c.owner,
 				point:     c.point,
