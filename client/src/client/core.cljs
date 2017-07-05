@@ -90,8 +90,9 @@
                                :textAlign "center"
                                :position "relative"
                                :background (cond
-                                             (get cell "Colony") color-colony
-                                             :default (get color-dirt (get cell "Soil")))}}
+                                             (nil? (get cell "Earth")) (get color-dirt 0)
+                                             (= "colony" (get-in cell ["Earth" "Type"])) color-colony
+                                             (= "soil" (get-in cell ["Earth" "Type"])) (get color-dirt 1))}}
               (when (get cell "Phermone") (dom/div #js {:style #js {:position "relative"
                                                                     :color color-phermone
                                                                     :zIndex "100"}} phermone))

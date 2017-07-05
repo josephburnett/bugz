@@ -2,14 +2,11 @@ package colony
 
 import "log"
 
-var _ Object = &Ant{}
 var _ AnimateObject = &Ant{}
 
 type Ant struct {
 	owner     Owner
-	point     Point
 	direction Direction
-	speed     int
 	strength  int
 	endurance int
 	cycle     int
@@ -21,14 +18,6 @@ func (a *Ant) Owner() Owner {
 	return a.owner
 }
 
-func (a *Ant) Type() string {
-	return "ant"
-}
-
-func (a *Ant) Point() Point {
-	return a.point
-}
-
 func (a *Ant) Tick() {
 	// Advance behavior cycle
 	a.cycle = (a.cycle + 1) % CYCLE
@@ -38,12 +27,11 @@ func (a *Ant) Tick() {
 	}
 }
 
-func (a *Ant) Move(o map[Point]Object, p Phermones, friends map[Owner]bool) Point {
+func (a *Ant) Move(point Point, o map[Direction]Object, p Phermones, friends Friends) Point {
 	possible := func(d Direction) bool {
-		newPoint := a.point.Plus(d)
-		object, exists := o[newPoint]
+		object, exists := o[d]
 		if !exists {
-			return true
+			return true // vacant
 		}
 		if object.Owner() == a.owner {
 			return false
@@ -56,18 +44,17 @@ func (a *Ant) Move(o map[Point]Object, p Phermones, friends map[Owner]bool) Poin
 	options := make([]Direction, 0, 8)
 	move := func() Point {
 		d := RandomDirection(options)
-		a.point = a.point.Plus(d)
 		a.direction = d
-		return a.point
+		return point.Plus(d)
 	}
 	// Die
 	if a.endurance == 0 {
 		a.strength = 0
-		return a.point
+		return point
 	}
 	// Follow a phermone, in front
 	for _, d := range a.direction.InFront() {
-		target := a.point.Plus(d)
+		target := point.Plus(d)
 		if _, hasPhermone := p[target]; hasPhermone && possible(d) {
 			options = append(options, d)
 		}
@@ -77,7 +64,7 @@ func (a *Ant) Move(o map[Point]Object, p Phermones, friends map[Owner]bool) Poin
 	}
 	// Follow a phermone, near by
 	for _, d := range Around() {
-		target := a.point.Plus(d)
+		target := point.Plus(d)
 		if _, hasPhermone := p[target]; hasPhermone && possible(d) {
 			options = append(options, d)
 		}
@@ -85,6 +72,7 @@ func (a *Ant) Move(o map[Point]Object, p Phermones, friends map[Owner]bool) Poin
 	if len(options) > 0 {
 		return move()
 	}
+	// Non-phemone based, cyclic movement
 	switch a.cycle {
 	default:
 		// Follow momentum
@@ -98,9 +86,9 @@ func (a *Ant) Move(o map[Point]Object, p Phermones, friends map[Owner]bool) Poin
 		}
 	case CYCLE - 2:
 		// Stay put
-		return a.point
+		return point
 	case CYCLE - 1:
-		// Random move
+		// Turn
 		for _, d := range Around() {
 			if possible(d) {
 				options = append(options, d)
@@ -111,24 +99,24 @@ func (a *Ant) Move(o map[Point]Object, p Phermones, friends map[Owner]bool) Poin
 		}
 	}
 	// Boxed in
-	return a.point
+	return point
 }
 
 func (a *Ant) Attack(o Object) bool {
-	switch ao := o.(type) {
+	switch o := o.(type) {
 	default:
 		return false
 	case AnimateObject:
-		defense := ao.Strength()
+		defense := o.Strength()
 		attack := a.strength
 		if defense > attack {
 			a.TakeDamage(defense)
 		} else {
-			ao.TakeDamage(attack)
+			o.TakeDamage(attack)
 		}
 		return !a.Dead()
 	case Object:
-		log.Println(a.Owner(), a.Type(), "eats", o.Type())
+		log.Printf("%v ant eats %v %T", a.Owner(), o.Owner(), o)
 		return true
 	}
 }
@@ -147,7 +135,7 @@ func (a *Ant) Dead() bool {
 
 func (a *Ant) View(o Owner) *ObjectView {
 	return &ObjectView{
-		Type:      a.Type(),
+		Type:      "ant",
 		Direction: a.direction,
 		Mine:      o == a.owner,
 	}

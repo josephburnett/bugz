@@ -30,12 +30,25 @@ func init() {
 	}
 }
 
+var D_SURROUNDING []Direction = make([]Direction, 0, 9)
+
+func init() {
+	for d, _ := range D_IN_FRONT {
+		D_SURROUNDING = append(D_SURROUNDING, d)
+	}
+	D_SURROUNDING = append(D_SURROUNDING, Direction{0, 0})
+}
+
 func (d Direction) InFront() []Direction {
 	return D_IN_FRONT[d]
 }
 
 func Around() []Direction {
 	return D_AROUND
+}
+
+func Surrounding() []Direction {
+	return D_SURROUNDING
 }
 
 func RandomDirection(d []Direction) Direction {

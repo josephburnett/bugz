@@ -12,14 +12,6 @@ func (f *Fruit) Owner() Owner {
 	return Owner("")
 }
 
-func (f *Fruit) Type() string {
-	return "fruit"
-}
-
-func (f *Fruit) Point() Point {
-	return f.point
-}
-
 func (f *Fruit) Tick() {
 	if f.time == 100 {
 		f.freshness = f.freshness - 1
@@ -35,7 +27,7 @@ func (f *Fruit) Dead() bool {
 
 func (f *Fruit) View(Owner) *ObjectView {
 	return &ObjectView{
-		Type:      f.Type(),
+		Type:      "fruit",
 		Direction: Direction{0, 0},
 		Mine:      false,
 	}

@@ -2,12 +2,18 @@ package colony
 
 import "log"
 
+var _ ProducerObject = &Soil{}
+
 type Soil struct {
 	richness int
 	time     int
 }
 
-func (s *Soil) Enrich() {
+func (s *Soil) Owner() Owner {
+	return Owner("")
+}
+
+func (s *Soil) Reclaim(_ Object) {
 	if s.richness < 3 {
 		log.Println("soil is enriched")
 		s.richness = s.richness + 1
@@ -38,4 +44,10 @@ func (s *Soil) Produce() (Object, bool) {
 		}, true
 	}
 	return nil, false
+}
+
+func (s *Soil) View(_ Owner) *ObjectView {
+	return &ObjectView{
+		Type: "soil",
+	}
 }

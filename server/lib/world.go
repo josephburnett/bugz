@@ -24,37 +24,42 @@ func (p1 Point) Equals(p2 Point) bool {
 
 type Object interface {
 	Owner() Owner
-	Type() string
-	Point() Point
 	Tick()
 	Dead() bool
 	View(Owner) *ObjectView
 }
 
 type AnimateObject interface {
-	Move(map[Point]Object, Phermones, map[Owner]bool) Point
+	Object
+	Move(Point, map[Direction]Object, Phermones, Friends) Point
 	Attack(Object) bool
 	TakeDamage(int)
 	Strength() int
 }
 
+type ProducerObject interface {
+	Object
+	Produce() (Object, bool)
+	Reclaim(Object)
+}
+
 type World struct {
-	owners    map[Owner]*Colony
-	friends   map[Owner]Friends
+	// Players
+	colonies map[Owner]*Colony
+	friends  map[Owner]Friends
+	// Layers
 	phermones map[Owner]Phermones
 	objects   map[Point]Object
-	colonies  map[Point]*Colony
-	soil      map[Point]*Soil
+	earth     map[Point]ProducerObject
 }
 
 func NewWorld() *World {
 	return &World{
-		owners:    make(map[Owner]*Colony),
+		colonies:  make(map[Owner]*Colony),
 		friends:   make(map[Owner]Friends),
 		phermones: make(map[Owner]Phermones),
 		objects:   make(map[Point]Object),
-		colonies:  make(map[Point]*Colony),
-		soil:      make(map[Point]*Soil),
+		earth:     make(map[Point]ProducerObject),
 	}
 }
 
@@ -65,7 +70,7 @@ func (w *World) NewColony(o Owner) {
 			rand.Intn(20),
 			rand.Intn(20),
 		}
-		if _, occupied := w.colonies[p]; !occupied {
+		if _, occupied := w.earth[p]; !occupied {
 			break
 		}
 	}
@@ -73,20 +78,10 @@ func (w *World) NewColony(o Owner) {
 		owner: o,
 		point: p,
 	}
-	w.owners[o] = c
+	w.colonies[o] = c
 	w.phermones[o] = make(Phermones)
-	w.colonies[p] = c
-	log.Println("Created new colony " + o)
-}
-
-func (w *World) KillColony(o Owner) {
-	c, ok := w.owners[o]
-	if !ok {
-		return
-	}
-	delete(w.owners, o)
-	delete(w.phermones, o)
-	delete(w.colonies, c.Point())
+	w.earth[p] = c
+	log.Println("Created new colony", o)
 }
 
 func (w *World) Friend(a Owner, b Owner) {
@@ -115,85 +110,93 @@ func (w *World) Unfriend(a Owner, b Owner) {
 	}
 }
 
-func (w *World) Advance() {
-	// Fill colony buckets
-	for _, colony := range w.owners {
-		colony.Tick()
+func (w *World) Reclaim(p Point, o Object) {
+	if _, ok := w.earth[p]; !ok {
+		w.earth[p] = &Soil{}
 	}
-	livingObjects := make([]Object, 0, len(w.objects))
+	w.earth[p].Reclaim(o)
+}
+
+func (w *World) Advance() {
+	// Age earth
+	for point, o := range w.earth {
+		o.Tick()
+		if o.Dead() {
+			log.Printf("%v %T fades away", o.Owner(), o)
+			delete(w.earth, point)
+		}
+	}
 	// Age objects
+	livingObjects := make([]Object, 0, len(w.objects))
+	livingObjectPoints := make([]Point, 0, len(w.objects))
 	for point, o := range w.objects {
 		o.Tick()
 		if o.Dead() {
-			log.Println(o.Owner(), o.Type(), "dies of natural causes")
-			if _, enriched := w.soil[point]; !enriched {
-				w.soil[point] = &Soil{}
-			}
-			w.soil[point].Enrich()
+			log.Printf("%v %T dies of natural causes\n", o.Owner(), o)
+			w.Reclaim(point, o)
 			delete(w.objects, point)
 		} else {
 			livingObjects = append(livingObjects, o)
+			livingObjectPoints = append(livingObjectPoints, point)
 		}
-	}
-	// Age soil
-	for _, soil := range w.soil {
-		soil.Tick()
 	}
 	// Visit objects in random order
 	perm := rand.Perm(len(livingObjects))
-	// Move objects
+	// Move animate objects
 	for _, i := range perm {
 		o := livingObjects[i]
+		point := livingObjectPoints[i]
 		if o.Dead() {
 			// Killed by another moving object
 			continue
 		}
 		if ao, ok := o.(AnimateObject); ok {
-			fromPoint := o.Point()
-			toPoint := ao.Move(w.objects, w.phermones[o.Owner()], w.friends[o.Owner()])
-			if fromPoint.Equals(toPoint) {
+			surroundings := make(map[Direction]Object)
+			for _, d := range Surrounding() {
+				if so, ok := w.objects[point.Plus(d)]; ok {
+					surroundings[d] = so
+				}
+			}
+			destination := ao.Move(point, surroundings, w.phermones[o.Owner()], w.friends[o.Owner()])
+			if point.Equals(destination) {
 				// No move
 				continue
 			}
-			target, occupied := w.objects[toPoint]
+			target, occupied := w.objects[destination]
 			if occupied {
-				win := ao.Attack(target)
-				if win {
-					log.Println(o.Owner(), " ", o.Type(), " kills ", target.Owner(), " ", target.Type())
-					w.objects[toPoint] = o
+				if win := ao.Attack(target); win {
+					log.Println("%v %T kills %v %T\n", o.Owner(), o, target.Owner(), target)
+					w.Reclaim(destination, target)
+					w.objects[destination] = o
 				} else {
-					log.Println(o.Owner(), " ", o.Type(), " is killed by ", target.Owner(), " ", target.Type())
+					log.Println("%v %T is killed by %v %T\n", o.Owner(), o, target.Owner(), target)
+					w.Reclaim(point, o)
 				}
-				delete(w.objects, fromPoint)
+				delete(w.objects, point)
 			} else {
-				w.objects[toPoint] = o
-				delete(w.objects, fromPoint)
+				w.objects[destination] = o
+				delete(w.objects, point)
 			}
 		}
 	}
 	// Produce objects
-	for _, c := range w.colonies {
-		ant, produced := c.Produce(w.objects)
-		if produced {
-			w.objects[ant.Point()] = ant
-		}
-	}
-	for point, s := range w.soil {
-		if object, produced := s.Produce(); produced {
-			if _, occupied := w.objects[point]; !occupied {
-				w.objects[point] = object
+	for point, producer := range w.earth {
+		if _, obstructed := w.objects[point]; !obstructed {
+			o, produced := producer.Produce()
+			if produced {
+				w.objects[point] = o
 			}
 		}
 	}
 	// Remove the dead stuff
-	for _, o := range w.objects {
+	for point, o := range w.objects {
 		if o.Dead() {
-			delete(w.objects, o.Point())
+			delete(w.objects, point)
 		}
 	}
-	for point, s := range w.soil {
-		if s.Dead() {
-			delete(w.soil, point)
+	for point, producer := range w.earth {
+		if producer.Dead() {
+			delete(w.earth, point)
 		}
 	}
 }
