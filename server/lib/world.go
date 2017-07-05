@@ -117,6 +117,30 @@ func (w *World) Reclaim(p Point, o Object) {
 	w.earth[p].Reclaim(o)
 }
 
+func (w *World) Drop(o Owner, what string) {
+	var p Point
+	for {
+		d := Direction{
+			rand.Intn(20) - 10,
+			rand.Intn(20) - 10,
+		}
+		p = w.colonies[o].Center().Plus(d)
+		if _, colony := w.earth[p].(*Colony); !colony {
+			break
+		}
+	}
+	switch what {
+	case "rock":
+		log.Println(o, "drops a rock")
+		if _, ok := w.objects[p]; ok {
+			log.Printf("%v %T is destroyed by a rock")
+		}
+		w.objects[p] = NewRock()
+	default:
+		log.Println(o, "tries to drop a", what)
+	}
+}
+
 func (w *World) Advance() {
 	// Age earth
 	for point, o := range w.earth {

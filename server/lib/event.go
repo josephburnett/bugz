@@ -13,6 +13,7 @@ const (
 	E_UI_PRODUCE  = EventType("ui-produce")
 	E_UI_PHERMONE = EventType("ui-phermone")
 	E_UI_CONNECT  = EventType("ui-connect")
+	E_UI_DROP     = EventType("ui-drop")
 	E_UI_FRIEND   = EventType("ui-friend")
 	E_TIME_TICK   = EventType("time-tick")
 	E_VIEW_UPDATE = EventType("view-update")
@@ -95,6 +96,10 @@ func NewEventLoop(w *World) (e *EventLoop) {
 				} else {
 					w.Unfriend(event.Owner, event.Friend)
 				}
+			case *UiDropEvent:
+				if _, ok := w.colonies[event.Owner]; ok {
+					w.Drop(event.Owner, event.What)
+				}
 			}
 		}
 	}()
@@ -140,6 +145,13 @@ type UiFriendEvent struct {
 }
 
 func (e *UiFriendEvent) eventType() EventType { return E_UI_FRIEND }
+
+type UiDropEvent struct {
+	Owner Owner
+	What  string
+}
+
+func (e *UiDropEvent) eventType() EventType { return E_UI_DROP }
 
 type TimeTickEvent struct{}
 
@@ -212,6 +224,19 @@ func UnmarshalEvent(t EventType, event map[string]interface{}) (Event, error) {
 			Owner:  Owner(owner),
 			Friend: Owner(friend),
 			State:  state,
+		}, nil
+	case E_UI_DROP:
+		owner, ok := event["Owner"].(string)
+		if !ok {
+			return nil, errors.New("Drop event from client does not have owner")
+		}
+		what, ok := event["What"].(string)
+		if !ok {
+			return nil, errors.New("Drop event from client does not have what")
+		}
+		return &UiDropEvent{
+			Owner: Owner(owner),
+			What:  what,
 		}, nil
 	default:
 		return nil, errors.New("Unknown message type from client")

@@ -17,10 +17,12 @@
 (def ant "⚈")
 (def fruit "♥")
 (def phermone "•")
+(def rock "☗")
 (def color-dirt {0 "#d3b383"
                  1 "#c6a471"
                  2 "#c19553"
                  3 "#579657"})
+(def color-rock "#7c7c7c")
 (def color-colony "#3d2501")
 (def color-phermone "#505ffc")
 (def color-my-ant "#b50c03")
@@ -78,6 +80,10 @@
                             :right "3px"}}
            fruit))
 
+(defn show-rock [cell]
+  (dom/div #js {:style #js {:color color-rock
+                            :fontSize "16px"}} rock))
+
 (defn cell-view [cell _]
   (reify om/IRender
     (render [_]
@@ -97,9 +103,11 @@
                                                                     :color color-phermone
                                                                     :zIndex "100"}} phermone))
               (when-not (nil? (get cell "Object"))
-                (if (= "ant" (get-in cell ["Object" "Type"]))
-                  (show-ant cell)
-                  (show-fruit cell)))))))
+                (condp = (get-in cell ["Object" "Type"])
+                  "ant" (show-ant cell)
+                  "fruit"(show-fruit cell)
+                  "rock" (show-rock cell)
+                  "?"))))))
 
 (defn row-view [row _]
   (reify om/IRender
@@ -121,6 +129,8 @@
                                 (dom/span #js {:style #js {:color (if is-friend color-friend color-enemy)}} f))))
                     (keys friends)))))))
 
+(def history (atom []))
+
 (defn world-view [world _]
   (reify
     om/IRender
@@ -135,9 +145,17 @@
     (did-mount [_]
       (set! (.-onkeydown js/document.body)
             (fn [e]
-              (when (= " " (.-key e))
-                (go (>! server-channel {"Type" "ui-produce"
-                                        "Event" {}})))))
+              (let [k (.-key e)]
+                (cond
+                  (= " " k)
+                  (go (>! server-channel {"Type" "ui-produce"
+                                          "Event" {}}))
+                  (re-matches #"[a-z]" k)
+                  (do
+                    (swap! history #(cons k %))
+                    (when (= "rock" (apply str (reverse (take 4 @history))))
+                      (go (>! server-channel {"Type" "ui-drop"
+                                              "Event" {"What" "rock"}}))))))))
       (go-loop []
         (let [msg (<! client-channel)]
           (when (= "view-update" (get msg "Type"))
