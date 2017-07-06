@@ -15,7 +15,7 @@
 (defonce client-channel (chan))
 
 (def ant "⚈")
-(def fruit "♥")
+(def fruit "🍎")
 (def phermone "•")
 (def rock "☗")
 (def color-dirt {0 "#d3b383"
@@ -61,7 +61,7 @@
   (let [style {:style {:color (if (get-in cell ["Object" "Mine"]) color-my-ant color-their-ant)
                        :position "absolute"
                        :top "0px"
-                       :right "5px"}}]
+                       :right "3px"}}]
     (condp = (get-in cell ["Object" "Direction"])
       [1,0] (dom/div (clj->js (merge style {:className "right"})) ant)
       [1,-1] (dom/div (clj->js (merge style {:className "down-right"})) ant)
@@ -73,15 +73,18 @@
       [1,1] (dom/div (clj->js (merge style {:className "up-right"})) ant))))
 
 (defn show-fruit [cell]
-  (dom/div #js {:style #js {:fontSize "25px"
+  (dom/div #js {:style #js {;:fontSize "25px"
                             :color color-fruit
                             :position "absolute"
-                            :top "-5px"
-                            :right "3px"}}
+                            :top "-3px"
+                            :right "0px"}}
            fruit))
 
 (defn show-rock [cell]
-  (dom/div #js {:style #js {:color color-rock
+  (dom/div #js {:style #js {:position "absolute"
+                            :top "0px"
+                            :right "2px"
+                            :color color-rock
                             :fontSize "16px"}} rock))
 
 (defn cell-view [cell _]
