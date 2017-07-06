@@ -154,11 +154,11 @@
                   (go (>! server-channel {"Type" "ui-produce"
                                           "Event" {}}))
                   (re-matches #"[a-z]" k)
-                  (do
+                  (let [word (apply str (reverse (take 4 @history)))]
                     (swap! history #(cons k %))
-                    (when (= "rock" (apply str (reverse (take 4 @history))))
+                    (when (contains? #{"rock" "food"} word)
                       (go (>! server-channel {"Type" "ui-drop"
-                                              "Event" {"What" "rock"}}))))))))
+                                              "Event" {"What" word}}))))))))
       (go-loop []
         (let [msg (<! client-channel)]
           (when (= "view-update" (get msg "Type"))

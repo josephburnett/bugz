@@ -136,6 +136,12 @@ func (w *World) Drop(o Owner, what string) {
 			log.Printf("%v %T is destroyed by a rock")
 		}
 		w.objects[p] = NewRock()
+	case "food":
+		log.Println(o, "drop some food")
+		if _, ok := w.objects[p]; ok {
+			log.Printf("%v %T is destroyed by falling food")
+		}
+		w.objects[p] = NewFruit()
 	default:
 		log.Println(o, "tries to drop a", what)
 	}

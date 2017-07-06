@@ -3,9 +3,15 @@ package colony
 var _ Object = &Fruit{}
 
 type Fruit struct {
-	point     Point
 	freshness int
 	time      int
+}
+
+func NewFruit() *Fruit {
+	return &Fruit{
+		freshness: 3,
+		time:      0,
+	}
 }
 
 func (f *Fruit) Owner() Owner {
