@@ -70,7 +70,9 @@ func (c *Clients) Disconnect(o Owner, ch chan *Message) {
 	}
 }
 
-func (c *Clients) Serve(addr string) {
+type Handler func(string, string) func(http.ResponseWriter, *http.Request)
+
+func (c *Clients) Serve(addr string, assetHandler Handler) {
 	go func() {
 		ClientWebsocket := func(w http.ResponseWriter, r *http.Request) {
 			defer func() {
@@ -155,6 +157,9 @@ func (c *Clients) Serve(addr string) {
 			<-done
 			log.Println("Disconnected client")
 		}
+		http.HandleFunc("/", assetHandler("index.html", "text/html"))
+		http.HandleFunc("/css/", assetHandler("", "text/css"))
+		http.HandleFunc("/js/", assetHandler("", "text/javascript"))
 		http.HandleFunc("/ws/owner/", ClientWebsocket)
 		http.ListenAndServe(addr, nil)
 	}()
@@ -165,7 +170,4 @@ type Message struct {
 	Event Event
 }
 
-var upgrader = websocket.Upgrader{
-	// TODO: remove cross origin permission for production
-	CheckOrigin: func(r *http.Request) bool { return true },
-}
+var upgrader = websocket.Upgrader{}
