@@ -16,3 +16,4 @@
 # Generated files
 server/proto
 server/client.go
+build
