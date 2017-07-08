@@ -16,6 +16,7 @@ const (
 	E_UI_DROP     = EventType("ui-drop")
 	E_UI_FRIEND   = EventType("ui-friend")
 	E_TIME_TICK   = EventType("time-tick")
+	E_SAVE_WORLD  = EventType("save-world")
 	E_VIEW_UPDATE = EventType("view-update")
 )
 
@@ -42,7 +43,7 @@ func (e *EventLoop) Unview(o Owner) {
 
 func (e *EventLoop) BroadcastView() {
 	for o, viewer := range e.viewers {
-		if _, exists := e.World.colonies[o]; !exists {
+		if _, exists := e.World.Colonies[o]; !exists {
 			// TODO: move this to a viewer cleanup routine
 			delete(e.viewers, o)
 			return
@@ -61,28 +62,36 @@ func NewEventLoop(w *World) (e *EventLoop) {
 		for {
 			event, ok := <-e.C
 			if !ok {
-				log.Println("[ERROR] event loop channel closed")
+				log.Println("event loop channel closed")
 				return
 			}
 			switch event := event.(type) {
 			default:
-				log.Println("[ERROR] unknown event")
+				log.Println("unknown event")
 			case *TimeTickEvent:
 				w.Advance()
 				e.BroadcastView()
+			case *SaveWorldEvent:
+				err := w.SaveWorld(event.Filename)
+				if err != nil {
+					log.Println("error saving the world", err.Error())
+				}
 			case *UiConnectEvent:
-				if _, exists := w.colonies[event.Owner]; !exists {
+				if _, exists := w.Colonies[event.Owner]; !exists {
 					w.NewColony(event.Owner)
 				}
 			case *UiProduceEvent:
-				colony, ok := w.colonies[event.Owner]
+				point, ok := w.Colonies[event.Owner]
 				if ok {
-					colony.produce = true
+					colony := w.Earth[point].(*Colony)
+					colony.P = true
+				} else {
+					log.Println("produce event for unknown colony", event.Owner)
 				}
 			case *UiPhermoneEvent:
-				p, ok := w.phermones[event.Owner]
+				p, ok := w.Phermones[event.Owner]
 				if !ok {
-					log.Println("[ERROR] phermone event for unknown owner: ", event.Owner)
+					log.Println("phermone event for unknown colony", event.Owner)
 					continue
 				}
 				if event.State {
@@ -97,19 +106,21 @@ func NewEventLoop(w *World) (e *EventLoop) {
 					w.Unfriend(event.Owner, event.Friend)
 				}
 			case *UiDropEvent:
-				if _, ok := w.colonies[event.Owner]; ok {
+				if _, ok := w.Colonies[event.Owner]; ok {
 					w.Drop(event.Owner, event.What)
+				} else {
+					log.Println("drop event for unknown colony", event.Owner)
 				}
 			}
 		}
 	}()
 	go func() {
-		t := time.NewTicker(1000 * time.Millisecond)
+		t := time.NewTicker(500 * time.Millisecond)
 		defer t.Stop()
 		for {
 			_, ok := <-t.C
 			if !ok {
-				log.Println("[ERROR] time ticker channel closed")
+				log.Println("time ticker channel closed")
 				return
 			}
 			e.C <- &TimeTickEvent{}
@@ -156,6 +167,12 @@ func (e *UiDropEvent) eventType() EventType { return E_UI_DROP }
 type TimeTickEvent struct{}
 
 func (e *TimeTickEvent) eventType() EventType { return E_TIME_TICK }
+
+type SaveWorldEvent struct {
+	Filename string
+}
+
+func (e *SaveWorldEvent) eventType() EventType { return E_SAVE_WORLD }
 
 type ViewUpdateEvent struct {
 	Owner     Owner

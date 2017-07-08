@@ -19,8 +19,8 @@ type WorldView struct {
 }
 
 func (w *World) View(owner Owner) *WorldView {
-	phermones := w.phermones[owner]
-	center := w.colonies[owner].Center()
+	phermones := w.Phermones[owner]
+	center := w.Colonies[owner]
 	lowerLeft := &Point{center[0] - 19, center[1] - 19}
 	upperRight := &Point{center[0] + 19, center[1] + 19}
 	wv := &WorldView{
@@ -35,10 +35,10 @@ func (w *World) View(owner Owner) *WorldView {
 			pv := &PointView{
 				Point: point,
 			}
-			if object, exists := w.objects[point]; exists {
+			if object, exists := w.Objects[point]; exists {
 				pv.Object = object.View(owner)
 			}
-			if producer, exists := w.earth[point]; exists {
+			if producer, exists := w.Earth[point]; exists {
 				pv.Earth = producer.View(owner)
 			}
 			if _, present := phermones[point]; present {
@@ -48,11 +48,11 @@ func (w *World) View(owner Owner) *WorldView {
 		}
 		wv.Points = append(wv.Points, row)
 	}
-	friends, ok := w.friends[owner]
+	friends, ok := w.Friends[owner]
 	if !ok {
 		friends = make(map[Owner]bool)
 	}
-	for o := range w.colonies {
+	for o := range w.Colonies {
 		if o == owner {
 			continue
 		}

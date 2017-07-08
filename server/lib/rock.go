@@ -1,11 +1,19 @@
 package colony
 
+import "encoding/gob"
+
+var _ Object = &Rock{}
+
+func init() {
+	gob.Register(&Rock{})
+}
+
 type Rock struct {
-	lifetime int
+	Lifetime int
 }
 
 func NewRock() *Rock {
-	return &Rock{lifetime: 1000}
+	return &Rock{Lifetime: 1000}
 }
 
 func (r *Rock) Owner() Owner {
@@ -13,11 +21,11 @@ func (r *Rock) Owner() Owner {
 }
 
 func (r *Rock) Tick() {
-	r.lifetime = r.lifetime - 1
+	r.Lifetime = r.Lifetime - 1
 }
 
 func (r *Rock) Dead() bool {
-	return r.lifetime == 0
+	return r.Lifetime == 0
 }
 
 func (r *Rock) View(o Owner) *ObjectView {

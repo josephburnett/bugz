@@ -1,29 +1,36 @@
 package colony
 
-import "log"
+import (
+	"encoding/gob"
+	"log"
+)
 
 var _ AnimateObject = &Ant{}
 
+func init() {
+	gob.Register(&Ant{})
+}
+
 type Ant struct {
-	owner     Owner
-	direction Direction
-	strength  int
-	endurance int
-	cycle     int
+	O         Owner
+	Direction Direction
+	S         int
+	Endurance int
+	Cycle     int
 }
 
 var CYCLE = 9
 
 func (a *Ant) Owner() Owner {
-	return a.owner
+	return a.O
 }
 
 func (a *Ant) Tick() {
 	// Advance behavior cycle
-	a.cycle = (a.cycle + 1) % CYCLE
-	a.endurance = a.endurance - 1
-	if a.endurance == 0 {
-		a.strength = 0
+	a.Cycle = (a.Cycle + 1) % CYCLE
+	a.Endurance = a.Endurance - 1
+	if a.Endurance == 0 {
+		a.S = 0
 	}
 }
 
@@ -33,7 +40,7 @@ func (a *Ant) Move(point Point, o map[Direction]Object, p Phermones, friends Fri
 		if !exists {
 			return true // vacant
 		}
-		if object.Owner() == a.owner {
+		if object.Owner() == a.O {
 			return false
 		}
 		if friend, ok := friends[object.Owner()]; ok && friend {
@@ -44,16 +51,16 @@ func (a *Ant) Move(point Point, o map[Direction]Object, p Phermones, friends Fri
 	options := make([]Direction, 0, 8)
 	move := func() Point {
 		d := RandomDirection(options)
-		a.direction = d
+		a.Direction = d
 		return point.Plus(d)
 	}
 	// Die
-	if a.endurance == 0 {
-		a.strength = 0
+	if a.Endurance == 0 {
+		a.S = 0
 		return point
 	}
 	// Follow a phermone, in front
-	for _, d := range a.direction.InFront() {
+	for _, d := range a.Direction.InFront() {
 		target := point.Plus(d)
 		if _, hasPhermone := p[target]; hasPhermone && possible(d) {
 			options = append(options, d)
@@ -73,10 +80,10 @@ func (a *Ant) Move(point Point, o map[Direction]Object, p Phermones, friends Fri
 		return move()
 	}
 	// Non-phemone based, cyclic movement
-	switch a.cycle {
+	switch a.Cycle {
 	default:
 		// Follow momentum
-		for _, d := range a.direction.InFront() {
+		for _, d := range a.Direction.InFront() {
 			if possible(d) {
 				options = append(options, d)
 			}
@@ -108,7 +115,7 @@ func (a *Ant) Attack(o Object) bool {
 		return false
 	case AnimateObject:
 		defense := o.Strength()
-		attack := a.strength
+		attack := a.Strength()
 		if defense > attack {
 			a.TakeDamage(defense)
 		} else {
@@ -122,21 +129,21 @@ func (a *Ant) Attack(o Object) bool {
 }
 
 func (a *Ant) Strength() int {
-	return a.strength
+	return a.S
 }
 
 func (a *Ant) TakeDamage(d int) {
-	a.strength = a.strength - d
+	a.S = a.S - d
 }
 
 func (a *Ant) Dead() bool {
-	return a.strength <= 0
+	return a.S <= 0
 }
 
 func (a *Ant) View(o Owner) *ObjectView {
 	return &ObjectView{
 		Type:      "ant",
-		Direction: a.direction,
-		Mine:      o == a.owner,
+		Direction: a.Direction,
+		Mine:      o == a.O,
 	}
 }

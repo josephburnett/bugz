@@ -1,8 +1,12 @@
 package colony
 
 import (
+	"bytes"
+	"encoding/gob"
+	"io/ioutil"
 	"log"
 	"math/rand"
+	"os"
 )
 
 type Owner string
@@ -45,22 +49,61 @@ type ProducerObject interface {
 
 type World struct {
 	// Players
-	colonies map[Owner]*Colony
-	friends  map[Owner]Friends
+	Colonies map[Owner]Point
+	Friends  map[Owner]Friends
 	// Layers
-	phermones map[Owner]Phermones
-	objects   map[Point]Object
-	earth     map[Point]ProducerObject
+	Phermones map[Owner]Phermones
+	Objects   map[Point]Object
+	Earth     map[Point]ProducerObject
 }
 
 func NewWorld() *World {
 	return &World{
-		colonies:  make(map[Owner]*Colony),
-		friends:   make(map[Owner]Friends),
-		phermones: make(map[Owner]Phermones),
-		objects:   make(map[Point]Object),
-		earth:     make(map[Point]ProducerObject),
+		Colonies:  make(map[Owner]Point),
+		Friends:   make(map[Owner]Friends),
+		Phermones: make(map[Owner]Phermones),
+		Objects:   make(map[Point]Object),
+		Earth:     make(map[Point]ProducerObject),
 	}
+}
+
+func LoadWorld(filename string) (*World, error) {
+	w := NewWorld()
+	if _, err := os.Stat(filename); os.IsNotExist(err) {
+		log.Println("creating world file")
+		err := w.SaveWorld(filename)
+		if err != nil {
+			return nil, err
+		}
+		return w, nil
+	}
+	b, err := ioutil.ReadFile(filename)
+	if err != nil {
+		return nil, err
+	}
+	buf := bytes.NewBuffer(b)
+	dec := gob.NewDecoder(buf)
+	err = dec.Decode(w)
+	if err != nil {
+		return nil, err
+	}
+	log.Println("loaded the world")
+	return w, nil
+}
+
+func (w *World) SaveWorld(filename string) error {
+	var b bytes.Buffer
+	enc := gob.NewEncoder(&b)
+	err := enc.Encode(w)
+	if err != nil {
+		return err
+	}
+	err = ioutil.WriteFile(filename, b.Bytes(), 0644)
+	if err != nil {
+		return err
+	}
+	log.Println("saved the world")
+	return nil
 }
 
 func (w *World) NewColony(o Owner) {
@@ -70,51 +113,51 @@ func (w *World) NewColony(o Owner) {
 			rand.Intn(20),
 			rand.Intn(20),
 		}
-		if _, occupied := w.earth[p]; !occupied {
+		if _, occupied := w.Earth[p]; !occupied {
 			break
 		}
 	}
 	c := &Colony{
-		owner: o,
-		point: p,
+		O:     o,
+		Point: p,
 	}
-	w.colonies[o] = c
-	w.phermones[o] = make(Phermones)
-	w.earth[p] = c
-	log.Println("Created new colony", o)
+	w.Colonies[o] = p
+	w.Phermones[o] = make(Phermones)
+	w.Earth[p] = c
+	log.Println("created new colony", o)
 }
 
 func (w *World) Friend(a Owner, b Owner) {
-	friendsA, ok := w.friends[a]
+	friendsA, ok := w.Friends[a]
 	if !ok {
 		friendsA = make(Friends)
-		w.friends[a] = friendsA
+		w.Friends[a] = friendsA
 	}
 	friendsA[b] = true
-	friendsB, ok := w.friends[b]
+	friendsB, ok := w.Friends[b]
 	if !ok {
 		friendsB = make(Friends)
-		w.friends[b] = friendsB
+		w.Friends[b] = friendsB
 	}
 	friendsB[a] = true
 }
 
 func (w *World) Unfriend(a Owner, b Owner) {
-	friendsA, ok := w.friends[a]
+	friendsA, ok := w.Friends[a]
 	if ok {
 		delete(friendsA, b)
 	}
-	friendsB, ok := w.friends[b]
+	friendsB, ok := w.Friends[b]
 	if ok {
 		delete(friendsB, a)
 	}
 }
 
 func (w *World) Reclaim(p Point, o Object) {
-	if _, ok := w.earth[p]; !ok {
-		w.earth[p] = &Soil{}
+	if _, ok := w.Earth[p]; !ok {
+		w.Earth[p] = &Soil{}
 	}
-	w.earth[p].Reclaim(o)
+	w.Earth[p].Reclaim(o)
 }
 
 func (w *World) Drop(o Owner, what string) {
@@ -124,24 +167,24 @@ func (w *World) Drop(o Owner, what string) {
 			rand.Intn(20) - 10,
 			rand.Intn(20) - 10,
 		}
-		p = w.colonies[o].Center().Plus(d)
-		if _, colony := w.earth[p].(*Colony); !colony {
+		p = w.Colonies[o].Plus(d)
+		if _, colony := w.Earth[p].(*Colony); !colony {
 			break
 		}
 	}
 	switch what {
 	case "rock":
 		log.Println(o, "drops a rock")
-		if _, ok := w.objects[p]; ok {
+		if _, ok := w.Objects[p]; ok {
 			log.Printf("%v %T is destroyed by a rock")
 		}
-		w.objects[p] = NewRock()
+		w.Objects[p] = NewRock()
 	case "food":
 		log.Println(o, "drop some food")
-		if _, ok := w.objects[p]; ok {
+		if _, ok := w.Objects[p]; ok {
 			log.Printf("%v %T is destroyed by falling food")
 		}
-		w.objects[p] = NewFruit()
+		w.Objects[p] = NewFruit()
 	default:
 		log.Println(o, "tries to drop a", what)
 	}
@@ -149,22 +192,22 @@ func (w *World) Drop(o Owner, what string) {
 
 func (w *World) Advance() {
 	// Age earth
-	for point, o := range w.earth {
+	for point, o := range w.Earth {
 		o.Tick()
 		if o.Dead() {
 			log.Printf("%v %T fades away", o.Owner(), o)
-			delete(w.earth, point)
+			delete(w.Earth, point)
 		}
 	}
 	// Age objects
-	livingObjects := make([]Object, 0, len(w.objects))
-	livingObjectPoints := make([]Point, 0, len(w.objects))
-	for point, o := range w.objects {
+	livingObjects := make([]Object, 0, len(w.Objects))
+	livingObjectPoints := make([]Point, 0, len(w.Objects))
+	for point, o := range w.Objects {
 		o.Tick()
 		if o.Dead() {
 			log.Printf("%v %T dies of natural causes\n", o.Owner(), o)
 			w.Reclaim(point, o)
-			delete(w.objects, point)
+			delete(w.Objects, point)
 		} else {
 			livingObjects = append(livingObjects, o)
 			livingObjectPoints = append(livingObjectPoints, point)
@@ -183,50 +226,50 @@ func (w *World) Advance() {
 		if ao, ok := o.(AnimateObject); ok {
 			surroundings := make(map[Direction]Object)
 			for _, d := range Surrounding() {
-				if so, ok := w.objects[point.Plus(d)]; ok {
+				if so, ok := w.Objects[point.Plus(d)]; ok {
 					surroundings[d] = so
 				}
 			}
-			destination := ao.Move(point, surroundings, w.phermones[o.Owner()], w.friends[o.Owner()])
+			destination := ao.Move(point, surroundings, w.Phermones[o.Owner()], w.Friends[o.Owner()])
 			if point.Equals(destination) {
 				// No move
 				continue
 			}
-			target, occupied := w.objects[destination]
+			target, occupied := w.Objects[destination]
 			if occupied {
 				if win := ao.Attack(target); win {
 					log.Println("%v %T kills %v %T\n", o.Owner(), o, target.Owner(), target)
 					w.Reclaim(destination, target)
-					w.objects[destination] = o
+					w.Objects[destination] = o
 				} else {
 					log.Println("%v %T is killed by %v %T\n", o.Owner(), o, target.Owner(), target)
 					w.Reclaim(point, o)
 				}
-				delete(w.objects, point)
+				delete(w.Objects, point)
 			} else {
-				w.objects[destination] = o
-				delete(w.objects, point)
+				w.Objects[destination] = o
+				delete(w.Objects, point)
 			}
 		}
 	}
 	// Produce objects
-	for point, producer := range w.earth {
-		if _, obstructed := w.objects[point]; !obstructed {
+	for point, producer := range w.Earth {
+		if _, obstructed := w.Objects[point]; !obstructed {
 			o, produced := producer.Produce()
 			if produced {
-				w.objects[point] = o
+				w.Objects[point] = o
 			}
 		}
 	}
 	// Remove the dead stuff
-	for point, o := range w.objects {
+	for point, o := range w.Objects {
 		if o.Dead() {
-			delete(w.objects, point)
+			delete(w.Objects, point)
 		}
 	}
-	for point, producer := range w.earth {
+	for point, producer := range w.Earth {
 		if producer.Dead() {
-			delete(w.earth, point)
+			delete(w.Earth, point)
 		}
 	}
 }
