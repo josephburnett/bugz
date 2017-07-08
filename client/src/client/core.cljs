@@ -36,7 +36,7 @@
 
 (defn connect [owner]
   (go
-    (let [addr (str "ws://" (.-hostname js/location) ":8080/ws/owner/" (js/encodeURI owner))
+    (let [addr (str "ws://" (.-hostname js/location) ":80/ws/owner/" (js/encodeURI owner))
           {:keys [ws-channel error]} (<! (ws-ch addr {:format :json}))]
       (if error
         (print error)
