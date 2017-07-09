@@ -8,16 +8,12 @@ import (
 	colony "github.com/josephburnett/colony/server/lib"
 )
 
-var worldFile = flag.String("world_file", "", "File for persistent world state.")
-var ip = flag.String("ip", "0.0.0.0", "HTTP server ip.")
-var port = flag.String("port", "8080", "HTTP server port.")
-
 func main() {
 	flag.Parse()
 	var w *colony.World
 	var err error
-	if *worldFile != "" {
-		w, err = colony.LoadWorld(*worldFile)
+	if *colony.Config.WorldFile != "" {
+		w, err = colony.LoadWorld(*colony.Config.WorldFile)
 		if err != nil {
 			panic(err)
 		}
@@ -25,7 +21,7 @@ func main() {
 		w = colony.NewWorld()
 	}
 	e := colony.NewEventLoop(w)
-	if *worldFile != "" {
+	if *colony.Config.WorldFile != "" {
 		go func() {
 			t := time.NewTicker(30 * time.Second)
 			defer t.Stop()
@@ -34,16 +30,17 @@ func main() {
 				if !ok {
 					panic("Error with save world timer.")
 				}
-				e.C <- &colony.SaveWorldEvent{Filename: *worldFile}
+				e.C <- &colony.SaveWorldEvent{Filename: *colony.Config.WorldFile}
 			}
 		}()
 	}
 	c := colony.NewClients(e)
-	c.Serve(*ip+":"+*port, colony.Handler(AssetHandler))
+	c.Serve(*colony.Config.Ip+":"+*colony.Config.Port, colony.Handler(AssetHandler))
 	done := make(chan struct{})
 	<-done
 }
 
+// This is only here because go-bindata generates Asset in the main package.
 func AssetHandler(suffix, contentType string) func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
 		data, err := Asset(r.URL.Path[1:] + suffix)

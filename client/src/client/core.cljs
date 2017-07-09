@@ -14,6 +14,9 @@
 (defonce server-channel (chan))
 (defonce client-channel (chan))
 
+(defn config [key]
+  (get (js->clj js/window.CONFIG) key))
+
 (def ant "⚈")
 (def fruit "🍎")
 (def phermone "•")
@@ -36,7 +39,7 @@
 
 (defn connect [owner]
   (go
-    (let [addr (str "ws://" (.-hostname js/location) ":80/ws/owner/" (js/encodeURI owner))
+    (let [addr (str "ws://" (.-hostname js/location) (str ":" (config "Port") "/ws/owner/") (js/encodeURI owner))
           {:keys [ws-channel error]} (<! (ws-ch addr {:format :json}))]
       (if error
         (print error)

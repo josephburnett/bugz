@@ -159,10 +159,22 @@ func (c *Clients) Serve(addr string, assetHandler Handler) {
 		}
 		http.HandleFunc("/", assetHandler("index.html", "text/html"))
 		http.HandleFunc("/css/", assetHandler("", "text/css"))
+		http.HandleFunc("/js/config.js", ClientConfig)
 		http.HandleFunc("/js/", assetHandler("", "text/javascript"))
 		http.HandleFunc("/ws/owner/", ClientWebsocket)
 		http.ListenAndServe(addr, nil)
 	}()
+}
+
+func ClientConfig(w http.ResponseWriter, r *http.Request) {
+	config, err := ConfigJson()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.Header().Add("Content-Type", "text/javascript")
+	w.Write([]byte("CONFIG = "))
+	w.Write(config)
 }
 
 type Message struct {
