@@ -45,12 +45,7 @@ func (c *Colony) Produce() (Object, bool) {
 		if c.Bucket < 1 {
 			c.P = false
 		}
-		return &Ant{
-			O:         c.O,
-			Direction: RandomDirection(D_AROUND),
-			S:         1,
-			Endurance: 40,
-		}, true
+		return NewAnt(c.O), true
 	}
 	return nil, false
 }

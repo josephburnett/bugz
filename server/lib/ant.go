@@ -19,6 +19,15 @@ type Ant struct {
 	Cycle     int
 }
 
+func NewAnt(o Owner) *Ant {
+	return &Ant{
+		O:         o,
+		Direction: RandomDirection(D_AROUND),
+		S:         1,
+		Endurance: 40,
+	}
+}
+
 var CYCLE = 9
 
 func (a *Ant) Owner() Owner {

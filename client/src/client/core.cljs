@@ -108,6 +108,7 @@
               (when-not (nil? (get cell "Object"))
                 (condp = (get-in cell ["Object" "Type"])
                   "ant" (show-ant cell)
+                  "queen" (show-ant cell)
                   "fruit"(show-fruit cell)
                   "rock" (show-rock cell)
                   "?"))))))
@@ -152,6 +153,9 @@
                 (cond
                   (= " " k)
                   (go (>! server-channel {"Type" "ui-produce"
+                                          "Event" {}}))
+                  (= "Escape" k)
+                  (go (>! server-channel {"Type" "ui-move"
                                           "Event" {}}))
                   (re-matches #"[a-z]" k)
                   (let [word (apply str (reverse (take 4 @history)))]

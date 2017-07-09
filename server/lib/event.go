@@ -11,6 +11,7 @@ type EventType string
 
 const (
 	E_UI_PRODUCE  = EventType("ui-produce")
+	E_UI_MOVE     = EventType("ui-move")
 	E_UI_PHERMONE = EventType("ui-phermone")
 	E_UI_CONNECT  = EventType("ui-connect")
 	E_UI_DROP     = EventType("ui-drop")
@@ -81,12 +82,22 @@ func NewEventLoop(w *World) (e *EventLoop) {
 					w.NewColony(event.Owner)
 				}
 			case *UiProduceEvent:
-				point, ok := w.Colonies[event.Owner]
-				if ok {
-					colony := w.Earth[point].(*Colony)
-					colony.P = true
+				if point, ok := w.Colonies[event.Owner]; ok {
+					if colony, ok := w.Earth[point].(*Colony); ok {
+						colony.P = true
+					} else {
+						log.Println("ignoring produce event for colony not in the earth")
+					}
 				} else {
 					log.Println("produce event for unknown colony", event.Owner)
+				}
+			case *UiMoveEvent:
+				if point, ok := w.Colonies[event.Owner]; ok {
+					colony := w.Earth[point].(*Colony)
+					delete(w.Earth, point)
+					w.Objects[point] = NewQueen(colony)
+				} else {
+					log.Println("move event for unknown colony", event.Owner)
 				}
 			case *UiPhermoneEvent:
 				p, ok := w.Phermones[event.Owner]
@@ -134,6 +145,12 @@ type UiProduceEvent struct {
 }
 
 func (e *UiProduceEvent) eventType() EventType { return E_UI_PRODUCE }
+
+type UiMoveEvent struct {
+	Owner Owner
+}
+
+func (e *UiMoveEvent) eventType() EventType { return E_UI_MOVE }
 
 type UiPhermoneEvent struct {
 	Owner Owner
@@ -195,6 +212,12 @@ func UnmarshalEvent(t EventType, event map[string]interface{}) (Event, error) {
 			return nil, errors.New("Produce event from client does not have owner")
 		}
 		return &UiProduceEvent{Owner: Owner(owner)}, nil
+	case E_UI_MOVE:
+		owner, ok := event["Owner"].(string)
+		if !ok {
+			return nil, errors.New("Move event from client does not have owner")
+		}
+		return &UiMoveEvent{Owner: Owner(owner)}, nil
 	case E_UI_PHERMONE:
 		owner, ok := event["Owner"].(string)
 		if !ok {

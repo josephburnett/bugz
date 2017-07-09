@@ -154,6 +154,13 @@ func (w *World) Unfriend(a Owner, b Owner) {
 }
 
 func (w *World) Reclaim(p Point, o Object) {
+	// A Queen becomes the colony that she carries
+	if queen, ok := o.(*Queen); ok {
+		w.Earth[p] = queen.Colony
+		w.Colonies[queen.Owner()] = p
+		return
+	}
+	// Everything else returns to dust
 	if _, ok := w.Earth[p]; !ok {
 		w.Earth[p] = &Soil{}
 	}
@@ -223,6 +230,13 @@ func (w *World) Advance() {
 			// Killed by another moving object
 			continue
 		}
+		move := func(to Point) {
+			w.Objects[to] = o
+			// Colonies follow the Queen
+			if queen, ok := o.(*Queen); ok {
+				w.Colonies[queen.Colony.Owner()] = to
+			}
+		}
 		if ao, ok := o.(AnimateObject); ok {
 			surroundings := make(map[Direction]Object)
 			for _, d := range Surrounding() {
@@ -238,16 +252,16 @@ func (w *World) Advance() {
 			target, occupied := w.Objects[destination]
 			if occupied {
 				if win := ao.Attack(target); win {
-					log.Println("%v %T kills %v %T\n", o.Owner(), o, target.Owner(), target)
+					log.Printf("%v %T kills %v %T\n", o.Owner(), o, target.Owner(), target)
 					w.Reclaim(destination, target)
-					w.Objects[destination] = o
+					move(destination)
 				} else {
-					log.Println("%v %T is killed by %v %T\n", o.Owner(), o, target.Owner(), target)
+					log.Printf("%v %T is killed by %v %T\n", o.Owner(), o, target.Owner(), target)
 					w.Reclaim(point, o)
 				}
 				delete(w.Objects, point)
 			} else {
-				w.Objects[destination] = o
+				move(destination)
 				delete(w.Objects, point)
 			}
 		}
