@@ -40,6 +40,7 @@
                 :compiler {:output-to "resources/public/js/compiled/client.js"
                            :main client.core
                            :optimizations :advanced
+                           :externs ["externs/config.js"]
                            :pretty-print false}}]}
 
   :figwheel {:server-port 3449
