@@ -28,7 +28,7 @@
 (def color-rock "#7c7c7c")
 (def color-colony "#3d2501")
 (def color-phermone "#505ffc")
-(def color-my-ant "#b50c03")
+(def color-my-ant (atom "#b50c03"))
 (def color-their-ant "#000")
 (def color-friend "#1f6d1f")
 (def color-enemy "#9e1914")
@@ -61,7 +61,7 @@
                   (recur))))))))))
 
 (defn show-ant [cell]
-  (let [style {:style {:color (if (get-in cell ["Object" "Mine"]) color-my-ant color-their-ant)
+  (let [style {:style {:color (if (get-in cell ["Object" "Mine"]) @color-my-ant color-their-ant)
                        :position "absolute"
                        :top "0px"
                        :right "3px"}}]
@@ -147,7 +147,10 @@
         (let [rows (get world "Points")]
           (dom/div nil
                    (dom/table nil (apply dom/tbody nil (om/build-all row-view rows)))
-                   (om/build friend-view (get world "Friends"))))))
+                   (om/build friend-view (get world "Friends"))
+                   (apply dom/ul nil (map (fn [c] (dom/li #js {:style #js {:color c}
+                                                               :onClick #(reset! color-my-ant c)} c))
+                                          ["#b50c03" "#4250f4" "#2c9916" "#f75199" "#7c7b7c"]))))))
     om/IDidMount
     (did-mount [_]
       (set! (.-onkeydown js/document.body)
