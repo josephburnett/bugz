@@ -69,6 +69,7 @@ func NewEventLoop(w *World) (e *EventLoop) {
 			switch event := event.(type) {
 			default:
 				log.Println("unknown event")
+			// System events
 			case *TimeTickEvent:
 				w.Advance()
 				e.BroadcastView()
@@ -77,32 +78,30 @@ func NewEventLoop(w *World) (e *EventLoop) {
 				if err != nil {
 					log.Println("error saving the world", err.Error())
 				}
+			// User events
 			case *UiConnectEvent:
 				if _, exists := w.Colonies[event.Owner]; !exists {
 					w.NewColony(event.Owner)
 				}
 			case *UiProduceEvent:
-				if point, ok := w.Colonies[event.Owner]; ok {
-					if colony, ok := w.Earth[point].(*Colony); ok {
-						colony.P = true
-					} else {
-						log.Println("ignoring produce event for colony not in the earth")
-					}
+				if colony, ok := w.FindColony(event.Owner); ok {
+					colony.Touch()
+					colony.P = true
 				} else {
-					log.Println("produce event for unknown colony", event.Owner)
+					log.Println("ignoring produce event for colony not on the earth")
 				}
 			case *UiMoveEvent:
-				if point, ok := w.Colonies[event.Owner]; ok {
-					if colony, ok := w.Earth[point].(*Colony); ok {
-						delete(w.Earth, point)
-						w.Objects[point] = NewQueen(colony)
-					} else {
-						log.Println("ignoring move event for colony no in the earth")
-					}
+				if colony, ok := w.FindColony(event.Owner); ok {
+					colony.Touch()
+					delete(w.Earth, colony.Center())
+					w.Objects[colony.Center()] = NewQueen(colony)
 				} else {
-					log.Println("move event for unknown colony", event.Owner)
+					log.Println("ignoring move event for colony not on the earth")
 				}
 			case *UiPhermoneEvent:
+				if colony, ok := w.FindColony(event.Owner); ok {
+					colony.Touch()
+				}
 				p, ok := w.Phermones[event.Owner]
 				if !ok {
 					log.Println("phermone event for unknown colony", event.Owner)
@@ -114,12 +113,18 @@ func NewEventLoop(w *World) (e *EventLoop) {
 					delete(p, event.Point)
 				}
 			case *UiFriendEvent:
+				if colony, ok := w.FindColony(event.Owner); ok {
+					colony.Touch()
+				}
 				if event.State {
 					w.Friend(event.Owner, event.Friend)
 				} else {
 					w.Unfriend(event.Owner, event.Friend)
 				}
 			case *UiDropEvent:
+				if colony, ok := w.FindColony(event.Owner); ok {
+					colony.Touch()
+				}
 				if _, ok := w.Colonies[event.Owner]; ok {
 					w.Drop(event.Owner, event.What)
 				} else {

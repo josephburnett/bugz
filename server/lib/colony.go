@@ -2,6 +2,7 @@ package colony
 
 import (
 	"encoding/gob"
+	"time"
 )
 
 var _ ProducerObject = &Colony{}
@@ -15,6 +16,7 @@ type Colony struct {
 	Point  Point
 	P      bool
 	Bucket int
+	Age    int64
 }
 
 func (c *Colony) Owner() Owner {
@@ -32,7 +34,16 @@ func (c *Colony) Tick() {
 }
 
 func (c *Colony) Dead() bool {
-	return false
+	if c.Age == 0 {
+		c.Touch()
+	}
+	// Colonies live for 30 hours without activity
+	now := time.Now().Unix()
+	return now > c.Age+(30*60*60)
+}
+
+func (c *Colony) Touch() {
+	c.Age = time.Now().Unix()
 }
 
 func (c *Colony) Reclaim(_ Object) {

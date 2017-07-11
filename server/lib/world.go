@@ -127,6 +127,15 @@ func (w *World) NewColony(o Owner) {
 	log.Println("created new colony", o)
 }
 
+func (w *World) FindColony(o Owner) (*Colony, bool) {
+	if point, ok := w.Colonies[o]; ok {
+		if colony, ok := w.Earth[point].(*Colony); ok {
+			return colony, true
+		}
+	}
+	return nil, false
+}
+
 func (w *World) Friend(a Owner, b Owner) {
 	friendsA, ok := w.Friends[a]
 	if !ok {
@@ -204,6 +213,11 @@ func (w *World) Advance() {
 		if o.Dead() {
 			log.Printf("%v %T fades away", o.Owner(), o)
 			delete(w.Earth, point)
+			if _, ok := o.(*Colony); ok {
+				delete(w.Colonies, o.Owner())
+				delete(w.Friends, o.Owner())
+				delete(w.Phermones, o.Owner())
+			}
 		}
 	}
 	// Age objects
