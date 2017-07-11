@@ -93,9 +93,12 @@ func NewEventLoop(w *World) (e *EventLoop) {
 				}
 			case *UiMoveEvent:
 				if point, ok := w.Colonies[event.Owner]; ok {
-					colony := w.Earth[point].(*Colony)
-					delete(w.Earth, point)
-					w.Objects[point] = NewQueen(colony)
+					if colony, ok := w.Earth[point].(*Colony); ok {
+						delete(w.Earth, point)
+						w.Objects[point] = NewQueen(colony)
+					} else {
+						log.Println("ignoring move event for colony no in the earth")
+					}
 				} else {
 					log.Println("move event for unknown colony", event.Owner)
 				}
