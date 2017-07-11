@@ -32,6 +32,11 @@ func (c *Clients) Connect(o Owner, ch chan *Message) {
 		// TODO: discard overflow to prevent slow clients from blocking engine
 		ch := make(chan *WorldView, 10)
 		go func() {
+			defer func() {
+				if r := recover(); r != nil {
+					log.Println("Recovered from panic in client view goroutine", r)
+				}
+			}()
 			for {
 				view, ok := <-ch
 				if !ok {
@@ -77,7 +82,7 @@ func (c *Clients) Serve(addr string, assetHandler Handler) {
 		ClientWebsocket := func(w http.ResponseWriter, r *http.Request) {
 			defer func() {
 				if r := recover(); r != nil {
-					log.Println("Recovered from panic in websocker handler: ", r)
+					log.Println("Recovered from panic in websocker handler", r)
 				}
 			}()
 			owner := r.URL.Path[len("/ws/owner/"):]
