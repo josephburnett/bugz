@@ -165,7 +165,9 @@ func (w *World) Unfriend(a Owner, b Owner) {
 func (w *World) Reclaim(p Point, o Object) {
 	// A Queen becomes the colony that she carries
 	if queen, ok := o.(*Queen); ok {
-		w.Earth[p] = queen.Colony
+		colony := queen.Colony
+		colony.Point = p
+		w.Earth[p] = colony
 		w.Colonies[queen.Owner()] = p
 		return
 	}
