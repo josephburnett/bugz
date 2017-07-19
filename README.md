@@ -26,7 +26,7 @@ Need a change of scene? Press 'Escape' and your colony will pickup and turn into
 
 ## Building and Running
 
-Colony can run locally so you don't have to connect your kid's computer to the Internet. The whole game is a single binary.
+Colony is hosted at http://colony.josephburnett.com but it can run locally too, so that you don't have to connect your kid's computer to the Internet. The whole game is a single binary.
 
 ### Build 
 
