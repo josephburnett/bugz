@@ -24,6 +24,8 @@ And if you just want to mix things up you can drop a rock by typing "rock". Ants
 
 Need a change of scene? Press 'Escape' and your colony will pickup and turn into a queen. A queen behaves just like a regular ant and will follow any phermone trail you leave. When it dies it turns back into a colony again.
 
+Don't like the killing? Click on the name of another colony to become friends (green). Don't like the color red? Click on another color at the bottom to change the color of your ants.
+
 ## Building and Running
 
 Colony is hosted at http://colony.josephburnett.com but it can run locally too, so that you don't have to connect your kid's computer to the Internet. The whole game is a single binary.
