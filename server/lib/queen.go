@@ -17,7 +17,7 @@ type Queen struct {
 
 func NewQueen(c *Colony) *Queen {
 	return &Queen{
-		Ant:    *NewAnt(c.O),
+		Ant:    *NewAnt(c.O, 7),
 		Colony: c,
 	}
 }

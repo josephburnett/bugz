@@ -11,12 +11,15 @@ func init() {
 	gob.Register(&Colony{})
 }
 
+var COLONY_CYCLE = 3
+
 type Colony struct {
 	O      Owner
 	Point  Point
 	P      bool
 	Bucket int
 	Age    int64
+	Cycle  int
 }
 
 func (c *Colony) Owner() Owner {
@@ -31,6 +34,7 @@ func (c *Colony) Tick() {
 	if c.P == false && c.Bucket < 15 {
 		c.Bucket = c.Bucket + 1
 	}
+	c.Cycle = (c.Cycle + 1) % COLONY_CYCLE
 }
 
 func (c *Colony) Dead() bool {
@@ -56,7 +60,12 @@ func (c *Colony) Produce() (Object, bool) {
 		if c.Bucket < 1 {
 			c.P = false
 		}
-		return NewAnt(c.O), true
+		switch (c.Cycle) {
+		case 2:
+			return NewAnt(c.O, 3), true
+		default:
+			return NewAnt(c.O, 1), true
+		}
 	}
 	return nil, false
 }

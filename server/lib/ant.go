@@ -19,11 +19,11 @@ type Ant struct {
 	Cycle     int
 }
 
-func NewAnt(o Owner) *Ant {
+func NewAnt(o Owner, strength int) *Ant {
 	return &Ant{
 		O:         o,
 		Direction: RandomDirection(D_AROUND),
-		S:         1,
+		S:         strength,
 		Endurance: 40,
 	}
 }
@@ -125,11 +125,8 @@ func (a *Ant) Attack(o Object) bool {
 	case AnimateObject:
 		defense := o.Strength()
 		attack := a.Strength()
-		if defense > attack {
-			a.TakeDamage(defense)
-		} else {
-			o.TakeDamage(attack)
-		}
+		a.TakeDamage(defense)
+		o.TakeDamage(attack)
 		return !a.Dead()
 	case Object:
 		log.Printf("%v ant eats %v %T", a.Owner(), o.Owner(), o)
@@ -154,5 +151,6 @@ func (a *Ant) View(o Owner) *ObjectView {
 		Type:      "ant",
 		Direction: a.Direction,
 		Mine:      o == a.O,
+		Strength:  a.S,
 	}
 }

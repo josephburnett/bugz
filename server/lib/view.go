@@ -4,6 +4,7 @@ type ObjectView struct {
 	Type      string
 	Direction Direction
 	Mine      bool
+	Strength  int
 }
 
 type PointView struct {

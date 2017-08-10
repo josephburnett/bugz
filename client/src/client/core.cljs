@@ -90,6 +90,14 @@
                             :color color-rock
                             :fontSize "16px"}} rock))
 
+(defn show-strength [cell]
+  (dom/div #js {:style #js {:position "absolute"
+                            :top "8px"
+                            :right "-3px"
+                            :color "#000"
+                            :zIndex "500"
+                            :fontSize "10px"}} (get-in cell ["Object" "Strength"])))
+
 (defn cell-view [cell _]
   (reify om/IRender
     (render [_]
@@ -114,7 +122,11 @@
                   "queen" (show-ant cell)
                   "fruit"(show-fruit cell)
                   "rock" (show-rock cell)
-                  "?"))))))
+                  "?"))
+              (when (and (not (nil? (get cell "Object")))
+                         (= "ant" (get-in cell ["Object" "Type"]))
+                         (contains? (get cell "Object") "Strength"))
+                (show-strength cell))))))
 
 (defn row-view [row _]
   (reify om/IRender
