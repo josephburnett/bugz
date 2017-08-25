@@ -162,7 +162,11 @@
                    (om/build friend-view (get world "Friends"))
                    (apply dom/ul nil (map (fn [c] (dom/li #js {:style #js {:color c}
                                                                :onClick #(reset! color-my-ant c)} c))
-                                          ["#b50c03" "#4250f4" "#2c9916" "#f75199" "#7c7b7c"]))))))
+                                          ["#b50c03" "#4250f4" "#2c9916" "#f75199" "#7c7b7c"]))
+                   (dom/ul nil
+                           (dom/li #js {:onClick #(go (>! server-channel {"Type" "ui-phermone-clear"
+                                                                          "Event" {}}))}
+                                   "Clear phermones"))))))
     om/IDidMount
     (did-mount [_]
       (set! (.-onkeydown js/document.body)

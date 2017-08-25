@@ -10,15 +10,16 @@ import (
 type EventType string
 
 const (
-	E_UI_PRODUCE  = EventType("ui-produce")
-	E_UI_MOVE     = EventType("ui-move")
-	E_UI_PHERMONE = EventType("ui-phermone")
-	E_UI_CONNECT  = EventType("ui-connect")
-	E_UI_DROP     = EventType("ui-drop")
-	E_UI_FRIEND   = EventType("ui-friend")
-	E_TIME_TICK   = EventType("time-tick")
-	E_SAVE_WORLD  = EventType("save-world")
-	E_VIEW_UPDATE = EventType("view-update")
+	E_UI_PRODUCE        = EventType("ui-produce")
+	E_UI_MOVE           = EventType("ui-move")
+	E_UI_PHERMONE       = EventType("ui-phermone")
+	E_UI_PHERMONE_CLEAR = EventType("ui-phermone-clear")
+	E_UI_CONNECT        = EventType("ui-connect")
+	E_UI_DROP           = EventType("ui-drop")
+	E_UI_FRIEND         = EventType("ui-friend")
+	E_TIME_TICK         = EventType("time-tick")
+	E_SAVE_WORLD        = EventType("save-world")
+	E_VIEW_UPDATE       = EventType("view-update")
 )
 
 type Event interface {
@@ -112,6 +113,9 @@ func NewEventLoop(w *World) (e *EventLoop) {
 				} else {
 					delete(p, event.Point)
 				}
+			case *UiPhermoneClearEvent:
+				w.Phermones[event.Owner] = make(Phermones)
+				log.Println("clearing phermones for " + event.Owner)
 			case *UiFriendEvent:
 				if colony, ok := w.FindColony(event.Owner); ok {
 					colony.Touch()
@@ -167,6 +171,12 @@ type UiPhermoneEvent struct {
 }
 
 func (e *UiPhermoneEvent) eventType() EventType { return E_UI_PHERMONE }
+
+type UiPhermoneClearEvent struct {
+	Owner Owner
+}
+
+func (e *UiPhermoneClearEvent) eventType() EventType { return E_UI_PHERMONE_CLEAR }
 
 type UiConnectEvent struct {
 	Owner Owner
@@ -254,6 +264,14 @@ func UnmarshalEvent(t EventType, event map[string]interface{}) (Event, error) {
 			Owner: Owner(owner),
 			Point: Point([2]int{int(x), int(y)}),
 			State: state,
+		}, nil
+	case E_UI_PHERMONE_CLEAR:
+		owner, ok := event["Owner"].(string)
+		if !ok {
+			return nil, errors.New("Phermone clear even from client does not have owner")
+		}
+		return &UiPhermoneClearEvent{
+			Owner: Owner(owner),
 		}, nil
 	case E_UI_FRIEND:
 		owner, ok := event["Owner"].(string)
