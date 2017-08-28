@@ -22,6 +22,17 @@ var D_IN_FRONT = map[Direction][]Direction{
 	D_UP_LEFT:    []Direction{D_LEFT, D_UP_LEFT, D_UP},
 }
 
+var D_OPPOSITE = map[Direction]Direction{
+	D_UP:         D_DOWN,
+	D_UP_RIGHT:   D_DOWN_LEFT,
+	D_RIGHT:      D_LEFT,
+	D_DOWN_RIGHT: D_UP_LEFT,
+	D_DOWN:       D_UP,
+	D_DOWN_LEFT:  D_UP_RIGHT,
+	D_LEFT:       D_RIGHT,
+	D_UP_LEFT:    D_DOWN_RIGHT,
+}
+
 var D_AROUND []Direction = make([]Direction, 0, 8)
 
 func init() {
@@ -41,6 +52,10 @@ func init() {
 
 func (d Direction) InFront() []Direction {
 	return D_IN_FRONT[d]
+}
+
+func (d Direction) Opposite() Direction {
+	return D_OPPOSITE[d]
 }
 
 func Around() []Direction {

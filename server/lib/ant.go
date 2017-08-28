@@ -57,18 +57,18 @@ func (a *Ant) Move(point Point, o map[Direction]Object, p Phermones, friends Fri
 		}
 		return true // attack
 	}
-	options := make([]Direction, 0, 8)
-	move := func() Point {
-		d := RandomDirection(options)
-		a.Direction = d
-		return point.Plus(d)
-	}
 	// Die
 	if a.Endurance == 0 {
 		a.S = 0
 		return point
 	}
-	// Follow a phermone, in front
+	// Follow a phermone, directly ahead
+	ahead := point.Plus(a.Direction)
+	if _, hasPhermone := p[ahead]; hasPhermone && possible(a.Direction) {
+		return ahead
+	}
+	// Follow a phermone, in front somewhere
+	options := make([]Direction, 0, 8)
 	for _, d := range a.Direction.InFront() {
 		target := point.Plus(d)
 		if _, hasPhermone := p[target]; hasPhermone && possible(d) {
@@ -76,43 +76,18 @@ func (a *Ant) Move(point Point, o map[Direction]Object, p Phermones, friends Fri
 		}
 	}
 	if len(options) > 0 {
-		return move()
+		d := RandomDirection(options)
+		a.Direction = d
+		return point.Plus(d)
 	}
-	// Follow a phermone, near by
-	for _, d := range Around() {
-		target := point.Plus(d)
-		if _, hasPhermone := p[target]; hasPhermone && possible(d) {
-			options = append(options, d)
-		}
+	// Follow momentum
+	if possible(a.Direction) {
+		return ahead
 	}
-	if len(options) > 0 {
-		return move()
-	}
-	// Non-phemone based, cyclic movement
-	switch a.Cycle {
-	default:
-		// Follow momentum
-		for _, d := range a.Direction.InFront() {
-			if possible(d) {
-				options = append(options, d)
-			}
-		}
-		if len(options) > 0 {
-			return move()
-		}
-	case CYCLE - 2:
-		// Stay put
-		return point
-	case CYCLE - 1:
-		// Turn
-		for _, d := range Around() {
-			if possible(d) {
-				options = append(options, d)
-			}
-		}
-		if len(options) > 0 {
-			return move()
-		}
+	// Turn around
+	if possible(a.Direction.Opposite()) {
+		a.Direction = a.Direction.Opposite()
+		return point.Plus(a.Direction)
 	}
 	// Boxed in
 	return point
