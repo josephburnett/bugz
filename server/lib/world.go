@@ -35,7 +35,7 @@ type Object interface {
 
 type AnimateObject interface {
 	Object
-	Move(Point, map[Direction]Object, Phermones, Friends) Point
+	Move(Point, Point, map[Direction]Object, Phermones, Friends) Point
 	Attack(Object) bool
 	TakeDamage(int)
 	Strength() int
@@ -260,7 +260,7 @@ func (w *World) Advance() {
 					surroundings[d] = so
 				}
 			}
-			destination := ao.Move(point, surroundings, w.Phermones[o.Owner()], w.Friends[o.Owner()])
+			destination := ao.Move(point, w.Colonies[ao.Owner()], surroundings, w.Phermones[o.Owner()], w.Friends[o.Owner()])
 			if point.Equals(destination) {
 				// No move
 				continue

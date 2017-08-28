@@ -40,8 +40,8 @@ func (q *Queen) View(o Owner) *ObjectView {
 	return view
 }
 
-func (q *Queen) Move(p Point, d map[Direction]Object, ph Phermones, f Friends) Point {
-	return q.Ant.Move(p, d, ph, f)
+func (q *Queen) Move(p Point, h Point, d map[Direction]Object, ph Phermones, f Friends) Point {
+	return q.Ant.Move(p, h, d, ph, f)
 }
 
 func (q *Queen) Attack(o Object) bool {

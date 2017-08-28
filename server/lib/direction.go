@@ -72,3 +72,19 @@ func RandomDirection(d []Direction) Direction {
 	}
 	return d[rand.Intn(len(d))]
 }
+
+func (p1 Point) DistanceFrom(p2 Point) int {
+	xDistance := p1[0] - p2[0]
+	if xDistance < 0 {
+		xDistance = -xDistance
+	}
+	yDistance := p1[1] - p2[1]
+	if yDistance < 0 {
+		yDistance = -yDistance
+	}
+	if xDistance > yDistance {
+		return xDistance
+	} else {
+		return yDistance
+	}
+}

@@ -43,7 +43,9 @@ func (a *Ant) Tick() {
 	}
 }
 
-func (a *Ant) Move(point Point, o map[Direction]Object, p Phermones, friends Friends) Point {
+var A_MAX_DISTANCE int = 15
+
+func (a *Ant) Move(point Point, home Point, o map[Direction]Object, p Phermones, friends Friends) Point {
 	possible := func(d Direction) bool {
 		object, exists := o[d]
 		if !exists {
@@ -62,13 +64,30 @@ func (a *Ant) Move(point Point, o map[Direction]Object, p Phermones, friends Fri
 		a.S = 0
 		return point
 	}
+	// Don't stray too far from home
+	options := make([]Direction, 0, 8)
+	if point.DistanceFrom(home) >= A_MAX_DISTANCE {
+		for _, d := range Around() {
+			if point.Plus(d).DistanceFrom(home) < A_MAX_DISTANCE {
+				options = append(options, d)
+			}
+		}
+		if len(options) >= 0 {
+			// Choose a random direction that leads closer to home
+			d := RandomDirection(options)
+			a.Direction = d
+			return point.Plus(d)
+		} else {
+			// Stay put
+			return point
+		}
+	}
 	// Follow a phermone, directly ahead
 	ahead := point.Plus(a.Direction)
 	if _, hasPhermone := p[ahead]; hasPhermone && possible(a.Direction) {
 		return ahead
 	}
 	// Follow a phermone, in front somewhere
-	options := make([]Direction, 0, 8)
 	for _, d := range a.Direction.InFront() {
 		target := point.Plus(d)
 		if _, hasPhermone := p[target]; hasPhermone && possible(d) {
