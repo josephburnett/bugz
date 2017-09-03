@@ -22,6 +22,14 @@ type Colony struct {
 	Cycle  int
 }
 
+func NewColony(o Owner, p Point) *Colony {
+	return &Colony{
+		O:      o,
+		Point:  p,
+		Bucket: 5,
+	}
+}
+
 func (c *Colony) Owner() Owner {
 	return c.O
 }
@@ -31,9 +39,6 @@ func (c *Colony) Center() Point {
 }
 
 func (c *Colony) Tick() {
-	if c.P == false && c.Bucket < 15 {
-		c.Bucket = c.Bucket + 1
-	}
 	c.Cycle = (c.Cycle + 1) % COLONY_CYCLE
 }
 
@@ -50,17 +55,20 @@ func (c *Colony) Touch() {
 	c.Age = time.Now().Unix()
 }
 
-func (c *Colony) Reclaim(_ Object) {
-	return
+func (c *Colony) Reclaim(o Object) {
+	if a, ok := o.(*Ant); ok && a.Owner() == c.Owner() {
+		c.Bucket = c.Bucket + 1
+	}
 }
 
 func (c *Colony) Produce() (Object, bool) {
 	if c.P {
-		c.Bucket = c.Bucket - 1
+		c.P = false
 		if c.Bucket < 1 {
-			c.P = false
+			return nil, false
 		}
-		switch (c.Cycle) {
+		c.Bucket = c.Bucket - 1
+		switch c.Cycle {
 		case 2:
 			return NewAnt(c.O, 3), true
 		default:
@@ -72,7 +80,8 @@ func (c *Colony) Produce() (Object, bool) {
 
 func (c *Colony) View(o Owner) *ObjectView {
 	return &ObjectView{
-		Type: "colony",
-		Mine: o == c.O,
+		Type:     "colony",
+		Mine:     o == c.O,
+		Strength: c.Bucket,
 	}
 }

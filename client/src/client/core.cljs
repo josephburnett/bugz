@@ -90,13 +90,17 @@
                             :color color-rock
                             :fontSize "16px"}} rock))
 
-(defn show-strength [cell]
-  (dom/div #js {:style #js {:position "absolute"
-                            :top "8px"
-                            :right "-3px"
-                            :color "#000"
-                            :zIndex "500"
-                            :fontSize "10px"}} (get-in cell ["Object" "Strength"])))
+(defn show-strength
+  ([value] (show-strength value {}))
+  ([value style]
+   (dom/div #js {:style (clj->js (merge {:position "absolute"
+                                         :top "8px"
+                                         :right "-3px"
+                                         :color "#000"
+                                         :zIndex "500"
+                                         :fontSize "10px"}
+                                        style))}
+            value)))
 
 (defn cell-view [cell _]
   (reify om/IRender
@@ -126,7 +130,14 @@
               (when (and (not (nil? (get cell "Object")))
                          (= "ant" (get-in cell ["Object" "Type"]))
                          (contains? (get cell "Object") "Strength"))
-                (show-strength cell))))))
+                (show-strength (get-in cell ["Object" "Strength"])))
+              (when (and (not (nil? (get cell "Earth")))
+                         (= "colony" (get-in cell ["Earth" "Type"]))
+                         (contains? (get cell "Earth") "Strength"))
+                (show-strength (get-in cell ["Earth" "Strength"])
+                               {:right "8px"
+                                :top "3px"
+                                :color "#ffff"}))))))
 
 (defn row-view [row _]
   (reify om/IRender

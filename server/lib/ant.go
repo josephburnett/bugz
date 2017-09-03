@@ -24,7 +24,7 @@ func NewAnt(o Owner, strength int) *Ant {
 		O:         o,
 		Direction: RandomDirection(D_AROUND),
 		S:         strength,
-		Endurance: 40,
+		Endurance: 600, // 5 minutes at 2 fps
 	}
 }
 

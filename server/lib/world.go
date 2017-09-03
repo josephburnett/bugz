@@ -117,10 +117,7 @@ func (w *World) NewColony(o Owner) {
 			break
 		}
 	}
-	c := &Colony{
-		O:     o,
-		Point: p,
-	}
+	c := NewColony(o, p)
 	w.Colonies[o] = p
 	w.Phermones[o] = make(Phermones)
 	w.Earth[p] = c
@@ -176,6 +173,12 @@ func (w *World) Reclaim(p Point, o Object) {
 		w.Earth[p] = &Soil{}
 	}
 	w.Earth[p].Reclaim(o)
+	// Ants are also reclaimed to their colony
+	if a, ok := o.(*Ant); ok {
+		if c, ok := w.FindColony(a.Owner()); ok {
+			c.Reclaim(a)
+		}
+	}
 }
 
 func (w *World) Drop(o Owner, what string) {
@@ -294,6 +297,9 @@ func (w *World) Advance() {
 	// Remove the dead stuff
 	for point, o := range w.Objects {
 		if o.Dead() {
+			if c, ok := w.FindColony(o.Owner()); ok {
+				c.Reclaim(o)
+			}
 			delete(w.Objects, point)
 		}
 	}
