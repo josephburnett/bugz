@@ -22,7 +22,7 @@ type Ant struct {
 func NewAnt(o Owner, strength int) *Ant {
 	return &Ant{
 		O:         o,
-		Direction: RandomDirection(D_AROUND),
+		Direction: D_DOWN,
 		S:         strength,
 		Endurance: 600, // 5 minutes at 2 fps
 	}
