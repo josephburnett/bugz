@@ -66,13 +66,20 @@ func (a *Ant) Move(point Point, home Point, o map[Direction]Object, p Phermones,
 	}
 	// Don't stray too far from home
 	options := make([]Direction, 0, 8)
+	best := A_MAX_DISTANCE
 	if point.DistanceFrom(home) >= A_MAX_DISTANCE {
 		for _, d := range Around() {
-			if point.Plus(d).DistanceFrom(home) < A_MAX_DISTANCE {
+			distance := point.Plus(d).DistanceFrom(home)
+			if distance == best {
+				options = append(options, d)
+			}
+			if distance < best {
+				best = distance
+				options = options[:0]
 				options = append(options, d)
 			}
 		}
-		if len(options) >= 0 {
+		if len(options) > 0 {
 			// Choose a random direction that leads closer to home
 			d := RandomDirection(options)
 			a.Direction = d
