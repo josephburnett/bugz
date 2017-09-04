@@ -16,10 +16,12 @@ type Queen struct {
 }
 
 func NewQueen(c *Colony) *Queen {
-	return &Queen{
+	q := &Queen{
 		Ant:    *NewAnt(c.O, 7),
 		Colony: c,
 	}
+	q.Ant.Endurance = 15
+	return q
 }
 
 func (q *Queen) Owner() Owner {
