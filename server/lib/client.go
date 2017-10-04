@@ -6,18 +6,19 @@ import (
 	"net/http"
 
 	"github.com/gorilla/websocket"
+	"github.com/josephburnett/colony/server/proto/view"
 )
 
 type Clients struct {
 	clients       map[Owner][]chan *Message
-	viewingOwners map[Owner]chan *WorldView
+	viewingOwners map[Owner]chan *view.World
 	eventLoop     *EventLoop
 }
 
 func NewClients(e *EventLoop) *Clients {
 	return &Clients{
 		clients:       make(map[Owner][]chan *Message),
-		viewingOwners: make(map[Owner]chan *WorldView),
+		viewingOwners: make(map[Owner]chan *view.World),
 		eventLoop:     e,
 	}
 }
@@ -30,7 +31,7 @@ func (c *Clients) Connect(o Owner, ch chan *Message) {
 	c.clients[o] = append(clients, ch)
 	if _, ok := c.viewingOwners[o]; !ok {
 		// TODO: discard overflow to prevent slow clients from blocking engine
-		ch := make(chan *WorldView, 10)
+		ch := make(chan *view.World, 10)
 		go func() {
 			defer func() {
 				if r := recover(); r != nil {

@@ -1,34 +1,5 @@
 syntax = "proto3";
-package colony;
-
-message WorldView {
-  string owner = 1;
-  repeated Point points = 2;
-  repeated Colony colonies = 3;
-}
-
-message Point {
-  Coordinate point = 1;
-  bool phermone = 2;
-  Object object = 3;
-  Object earth = 4;
-}
-
-message Colony {
-  string owner = 1;
-  bool friend = 2;
-}
-
-message Coordinate {
-  int32 x = 1;
-  int32 y = 2;
-}
-
-message Object {
-  string type = 1;
-  Coordinate direction = 2;
-  string owner = 3;
-}
+package event;
 
 message Event {
   string owner = 1;
@@ -39,6 +10,11 @@ message Event {
     FriendEvent friend = 5;
     DropEvent drop = 6;
   }
+}
+
+message Coordinate {
+  int32 x = 1;
+  int32 y = 2;
 }
 
 message ConnectEvent {}

@@ -3,6 +3,8 @@ package colony
 import (
 	"encoding/gob"
 	"log"
+
+	"github.com/josephburnett/colony/server/proto/view"
 )
 
 var _ ProducerObject = &Soil{}
@@ -50,8 +52,8 @@ func (s *Soil) Produce() (Object, bool) {
 	return nil, false
 }
 
-func (s *Soil) View(_ Owner) *ObjectView {
-	return &ObjectView{
+func (s *Soil) View(_ Owner) *view.Object {
+	return &view.Object{
 		Type: "soil",
 	}
 }

@@ -1,6 +1,10 @@
 package colony
 
-import "encoding/gob"
+import (
+	"encoding/gob"
+
+	"github.com/josephburnett/colony/server/proto/view"
+)
 
 var _ Object = &Fruit{}
 
@@ -37,10 +41,10 @@ func (f *Fruit) Dead() bool {
 	return f.Freshness < 1
 }
 
-func (f *Fruit) View(Owner) *ObjectView {
-	return &ObjectView{
+func (f *Fruit) View(Owner) *view.Object {
+	return &view.Object{
 		Type:      "fruit",
-		Direction: Direction{0, 0},
+		Direction: &view.Coordinate{0, 0},
 		Mine:      false,
 	}
 }

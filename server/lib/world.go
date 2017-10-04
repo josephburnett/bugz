@@ -7,6 +7,8 @@ import (
 	"log"
 	"math/rand"
 	"os"
+
+	"github.com/josephburnett/colony/server/proto/view"
 )
 
 type Owner string
@@ -30,7 +32,7 @@ type Object interface {
 	Owner() Owner
 	Tick()
 	Dead() bool
-	View(Owner) *ObjectView
+	View(Owner) *view.Object
 }
 
 type AnimateObject interface {

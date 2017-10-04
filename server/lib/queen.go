@@ -2,6 +2,8 @@ package colony
 
 import (
 	"encoding/gob"
+
+	"github.com/josephburnett/colony/server/proto/view"
 )
 
 var _ AnimateObject = &Queen{}
@@ -36,7 +38,7 @@ func (q *Queen) Dead() bool {
 	return q.Ant.Dead()
 }
 
-func (q *Queen) View(o Owner) *ObjectView {
+func (q *Queen) View(o Owner) *view.Object {
 	view := q.Ant.View(o)
 	view.Type = "queen"
 	return view

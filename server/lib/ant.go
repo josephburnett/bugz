@@ -3,6 +3,8 @@ package colony
 import (
 	"encoding/gob"
 	"log"
+
+	"github.com/josephburnett/colony/server/proto/view"
 )
 
 var _ AnimateObject = &Ant{}
@@ -147,11 +149,14 @@ func (a *Ant) Dead() bool {
 	return a.S <= 0
 }
 
-func (a *Ant) View(o Owner) *ObjectView {
-	return &ObjectView{
-		Type:      "ant",
-		Direction: a.Direction,
-		Mine:      o == a.O,
-		Strength:  a.S,
+func (a *Ant) View(o Owner) *view.Object {
+	return &view.Object{
+		Type: "ant",
+		Direction: &view.Coordinate{
+			X: int32(a.Direction[0]),
+			Y: int32(a.Direction[1]),
+		},
+		Mine:     o == a.O,
+		Strength: int32(a.S),
 	}
 }

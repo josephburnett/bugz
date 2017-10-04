@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log"
 	"time"
+
+	"github.com/josephburnett/colony/server/proto/view"
 )
 
 type EventType string
@@ -29,10 +31,10 @@ type Event interface {
 type EventLoop struct {
 	C       chan Event
 	World   *World
-	viewers map[Owner]chan *WorldView
+	viewers map[Owner]chan *view.World
 }
 
-func (e *EventLoop) View(o Owner, c chan *WorldView) {
+func (e *EventLoop) View(o Owner, c chan *view.World) {
 	e.viewers[o] = c
 }
 
@@ -58,7 +60,7 @@ func NewEventLoop(w *World) (e *EventLoop) {
 	e = &EventLoop{
 		C:       make(chan Event, 100),
 		World:   w,
-		viewers: make(map[Owner]chan *WorldView),
+		viewers: make(map[Owner]chan *view.World),
 	}
 	go func() {
 		for {
@@ -211,7 +213,7 @@ func (e *SaveWorldEvent) eventType() EventType { return E_SAVE_WORLD }
 
 type ViewUpdateEvent struct {
 	Owner     Owner
-	WorldView *WorldView
+	WorldView *view.World
 }
 
 func (e *ViewUpdateEvent) eventType() EventType { return E_VIEW_UPDATE }

@@ -3,6 +3,8 @@ package colony
 import (
 	"encoding/gob"
 	"time"
+
+	"github.com/josephburnett/colony/server/proto/view"
 )
 
 var _ ProducerObject = &Colony{}
@@ -78,10 +80,10 @@ func (c *Colony) Produce() (Object, bool) {
 	return nil, false
 }
 
-func (c *Colony) View(o Owner) *ObjectView {
-	return &ObjectView{
+func (c *Colony) View(o Owner) *view.Object {
+	return &view.Object{
 		Type:     "colony",
 		Mine:     o == c.O,
-		Strength: c.Bucket,
+		Strength: int32(c.Bucket),
 	}
 }

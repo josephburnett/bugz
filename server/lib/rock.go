@@ -1,6 +1,10 @@
 package colony
 
-import "encoding/gob"
+import (
+	"encoding/gob"
+
+	"github.com/josephburnett/colony/server/proto/view"
+)
 
 var _ Object = &Rock{}
 
@@ -28,8 +32,8 @@ func (r *Rock) Dead() bool {
 	return r.Lifetime == 0
 }
 
-func (r *Rock) View(o Owner) *ObjectView {
-	return &ObjectView{
+func (r *Rock) View(o Owner) *view.Object {
+	return &view.Object{
 		Type: "rock",
 	}
 }
