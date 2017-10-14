@@ -1,32 +1,33 @@
 package colony
 
 import (
-	"encoding/json"
 	"log"
 	"net/http"
 
+	"github.com/golang/protobuf/proto"
 	"github.com/gorilla/websocket"
+	"github.com/josephburnett/colony/server/proto/event"
 	"github.com/josephburnett/colony/server/proto/view"
 )
 
 type Clients struct {
-	clients       map[Owner][]chan *Message
+	clients       map[Owner][]chan *view.World
 	viewingOwners map[Owner]chan *view.World
 	eventLoop     *EventLoop
 }
 
 func NewClients(e *EventLoop) *Clients {
 	return &Clients{
-		clients:       make(map[Owner][]chan *Message),
+		clients:       make(map[Owner][]chan *view.World),
 		viewingOwners: make(map[Owner]chan *view.World),
 		eventLoop:     e,
 	}
 }
 
-func (c *Clients) Connect(o Owner, ch chan *Message) {
+func (c *Clients) Connect(o Owner, ch chan *view.World) {
 	clients, exists := c.clients[o]
 	if !exists {
-		clients = make([]chan *Message, 0)
+		clients = make([]chan *view.World, 0)
 	}
 	c.clients[o] = append(clients, ch)
 	if _, ok := c.viewingOwners[o]; !ok {
@@ -43,16 +44,8 @@ func (c *Clients) Connect(o Owner, ch chan *Message) {
 				if !ok {
 					return
 				}
-				event := &ViewUpdateEvent{
-					Owner:     o,
-					WorldView: view,
-				}
-				msg := &Message{
-					Type:  event.eventType(),
-					Event: event,
-				}
 				for _, client := range c.clients[o] {
-					client <- msg
+					client <- view
 				}
 			}
 		}()
@@ -60,7 +53,7 @@ func (c *Clients) Connect(o Owner, ch chan *Message) {
 	}
 }
 
-func (c *Clients) Disconnect(o Owner, ch chan *Message) {
+func (c *Clients) Disconnect(o Owner, ch chan *view.World) {
 	clients, exists := c.clients[o]
 	if !exists {
 		return
@@ -99,11 +92,12 @@ func (c *Clients) Serve(addr string, assetHandler Handler) {
 			log.Println("Connected client: ", owner)
 			defer conn.Close()
 			// Create Colony if necessary
-			c.eventLoop.C <- &UiConnectEvent{
-				Owner: Owner(owner),
+			c.eventLoop.C <- &event.Event{
+				Owner: owner,
+				Event: &event.Event_Connect{},
 			}
 			// Register channel for communication with the client
-			clientChan := make(chan *Message, 10)
+			clientChan := make(chan *view.World, 10)
 			defer close(clientChan)
 			c.Connect(Owner(owner), clientChan)
 			defer c.Disconnect(Owner(owner), clientChan)
@@ -116,7 +110,13 @@ func (c *Clients) Serve(addr string, assetHandler Handler) {
 						done <- true
 						return
 					}
-					err = conn.WriteJSON(msg)
+					bytes, err := proto.Marshal(msg)
+					if err != nil {
+						log.Println("Error while serializing message: ", err)
+						close(done)
+						return
+					}
+					err = conn.WriteMessage(websocket.BinaryMessage, bytes)
 					if err != nil {
 						log.Println("Error while writing to client: ", err)
 						close(done)
@@ -132,29 +132,10 @@ func (c *Clients) Serve(addr string, assetHandler Handler) {
 						log.Println("Error while reading from client: ", err)
 						return
 					}
-					var msg interface{}
-					if err = json.Unmarshal(message, &msg); err != nil {
-						log.Println("Error while deserializing message from client: ", string(message))
-						continue
-					}
-					msgMap, ok := msg.(map[string]interface{})
-					if !ok {
-						log.Println("Unexpected structure of message from client: ", string(message))
-						continue
-					}
-					msgType, ok := msgMap["Type"].(string)
-					if !ok {
-						log.Println("Message from client does not have Type: ", string(message))
-						continue
-					}
-					msgEvent, ok := msgMap["Event"].(map[string]interface{})
-					if !ok {
-						log.Println("Message from client does not have event: ", string(message))
-						continue
-					}
-					event, err := UnmarshalEvent(EventType(msgType), msgEvent)
+					event := &event.Event{}
+					err = proto.Unmarshal(message, event)
 					if err != nil {
-						log.Println(err.Error(), ": ", string(message))
+						log.Println("Error unmarshalling event from client: ", err)
 						continue
 					}
 					c.eventLoop.C <- event
@@ -181,11 +162,6 @@ func ClientConfig(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("Content-Type", "text/javascript")
 	w.Write([]byte("CONFIG = "))
 	w.Write(config)
-}
-
-type Message struct {
-	Type  EventType
-	Event Event
 }
 
 var upgrader = websocket.Upgrader{}

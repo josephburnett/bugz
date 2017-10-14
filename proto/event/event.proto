@@ -4,11 +4,15 @@ package event;
 message Event {
   string owner = 1;
   oneof event {
-    ConnectEvent connect = 2;
-    ProduceEvent produce = 3;
-    PhermoneEvent phermone = 4;
-    FriendEvent friend = 5;
-    DropEvent drop = 6;
+    Tick tick = 2;
+    SaveWorld save_world = 3;
+    Connect connect = 4;
+    Produce produce = 5;
+    Move move = 6;
+    Phermone phermone = 7;
+    PhermoneClear phermone_clear = 8;
+    Friend friend = 9;
+    Drop drop = 10;
   }
 }
 
@@ -17,20 +21,30 @@ message Coordinate {
   int32 y = 2;
 }
 
-message ConnectEvent {}
+message Tick {}
 
-message ProduceEvent {}
+message SaveWorld {
+  string filename = 1;
+}
 
-message PhermoneEvent {
+message Connect {}
+
+message Produce {}
+
+message Move {}
+
+message Phermone {
   Coordinate point = 1;
   bool state = 2;
 }
 
-message FriendEvent {
+message PhermoneClear{}
+
+message Friend {
   string friend = 1;
   bool state = 2;
 }
 
-message DropEvent {
+message Drop {
   string what = 3;
 }

@@ -6,6 +6,7 @@ import (
 	"time"
 
 	colony "github.com/josephburnett/colony/server/lib"
+	"github.com/josephburnett/colony/server/proto/event"
 )
 
 func main() {
@@ -30,7 +31,13 @@ func main() {
 				if !ok {
 					panic("Error with save world timer.")
 				}
-				e.C <- &colony.SaveWorldEvent{Filename: *colony.Config.WorldFile}
+				e.C <- &event.Event{
+					Event: &event.Event_SaveWorld{
+						SaveWorld: &event.SaveWorld{
+							Filename: *colony.Config.WorldFile,
+						},
+					},
+				}
 			}
 		}()
 	}
