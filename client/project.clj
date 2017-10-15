@@ -37,7 +37,8 @@
                            :preloads [devtools.preload]}}
                {:id "min"
                 :source-paths ["src"]
-                :compiler {:output-to "resources/public/js/compiled/client.js"
+                :compiler {:libs ["proto/proto_libs.js"]
+                           :output-to "resources/public/js/compiled/client.js"
                            :main client.core
                            :optimizations :advanced
                            :externs ["externs/config.js"]

@@ -49,11 +49,6 @@ func NewEventLoop(w *World) (e *EventLoop) {
 				log.Println("event loop channel closed")
 				return
 			}
-			owner := Owner(ev.Owner)
-			if owner == "" {
-				log.Println("invalid event, missing owner")
-				continue
-			}
 			switch ev.GetEvent().(type) {
 			default:
 				log.Println("unknown event")
@@ -61,12 +56,21 @@ func NewEventLoop(w *World) (e *EventLoop) {
 			case *event.Event_Tick:
 				w.Advance()
 				e.BroadcastView()
+				continue
 			case *event.Event_SaveWorld:
 				saveWorld := ev.GetSaveWorld()
 				err := w.SaveWorld(saveWorld.Filename)
 				if err != nil {
 					log.Println("error saving the world", err.Error())
 				}
+				continue
+			}
+			owner := Owner(ev.Owner)
+			if owner == "" {
+				log.Println("invalid event, missing owner")
+				continue
+			}
+			switch ev.GetEvent().(type) {
 			// User events
 			case *event.Event_Connect:
 				if _, exists := w.Colonies[owner]; !exists {
