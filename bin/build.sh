@@ -5,7 +5,7 @@ set -e
 export ROOT=`git rev-parse --show-toplevel`
 
 cd "${ROOT}"
-bin/genproto.sh
+# bin/genproto.sh
 bin/genclient.sh
 
 cd "${ROOT}/server"

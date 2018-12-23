@@ -15,39 +15,44 @@ type PointView struct {
 }
 
 type WorldView struct {
-	Points  [][]*PointView
-	Friends map[Owner]bool
+	Points     []*PointView
+	Friends    map[Owner]bool
+	LowerLeft  Point
+	UpperRight Point
 }
 
 func (w *World) View(owner Owner) *WorldView {
 	phermones := w.Phermones[owner]
 	center := w.Colonies[owner]
-	lowerLeft := &Point{center[0] - 19, center[1] - 19}
-	upperRight := &Point{center[0] + 19, center[1] + 19}
 	wv := &WorldView{
-		Points:  make([][]*PointView, 0, 39),
-		Friends: make(map[Owner]bool),
+		Points:     make([]*PointView, 0),
+		Friends:    make(map[Owner]bool),
+		LowerLeft:  Point{center[0] - 19, center[1] - 19},
+		UpperRight: Point{center[0] + 19, center[1] + 19},
 	}
-	for y := upperRight[1]; y >= lowerLeft[1]; y-- {
-		row := make([]*PointView, 0, 39)
-		wv.Points = append(wv.Points, row)
-		for x := lowerLeft[0]; x <= upperRight[0]; x++ {
+	for y := wv.UpperRight[1]; y >= wv.LowerLeft[1]; y-- {
+		for x := wv.LowerLeft[0]; x <= wv.UpperRight[0]; x++ {
 			point := Point{x, y}
 			pv := &PointView{
 				Point: point,
 			}
+			nonEmpty := false
 			if object, exists := w.Objects[point]; exists {
 				pv.Object = object.View(owner)
+				nonEmpty = true
 			}
 			if producer, exists := w.Earth[point]; exists {
 				pv.Earth = producer.View(owner)
+				nonEmpty = true
 			}
 			if _, present := phermones[point]; present {
 				pv.Phermone = true
+				nonEmpty = true
 			}
-			row = append(row, pv)
+			if nonEmpty {
+				wv.Points = append(wv.Points, pv)
+			}
 		}
-		wv.Points = append(wv.Points, row)
 	}
 	friends, ok := w.Friends[owner]
 	if !ok {

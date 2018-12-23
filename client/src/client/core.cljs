@@ -106,6 +106,7 @@
   (reify om/IRender
     (render [_]
       (dom/td #js {:onClick #(do
+                               (om/update! cell {"Point" (get cell "Point")})
                                (om/update! cell ["Phermone"] (not (get cell "Phermone")))
                                (go (>! server-channel {"Type" "ui-phermone"
                                                        "Event" {"Point" (get cell "Point")
@@ -161,6 +162,16 @@
 
 (def history (atom []))
 
+(defn point-symbol [point]
+  (symbol (str (first point) "-" (second point))))
+
+(defn expand-map [lower-left upper-right points]
+  (let [point-map (into {} (map (fn [p] {(point-symbol (get p "Point")) p}) points))]
+    (map (fn [y]
+           (map (fn [x] (if (contains? point-map (point-symbol [x y])) (get point-map (point-symbol [x y])) {"Point" [x y] "Phermone" false}))
+                (range (first lower-left) (first upper-right))))
+         (range (second upper-right) (second lower-left) -1))))
+
 (defn world-view [world _]
   (reify
     om/IRender
@@ -199,7 +210,9 @@
       (go-loop []
         (let [msg (<! client-channel)]
           (when (= "view-update" (get msg "Type"))
-            (om/update! world (get-in msg ["Event" "WorldView"]))))
+            (let [update (get-in msg ["Event" "WorldView"])
+                  points (expand-map (get update "LowerLeft") (get update "UpperRight") (get update "Points"))]
+            (om/update! world (assoc update "Points" points)))))
         (recur)))))
 
 (defn owner-selection [data owner]
